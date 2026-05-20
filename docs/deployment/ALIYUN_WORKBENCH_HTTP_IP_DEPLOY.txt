@@ -1,34 +1,36 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -Eeuo pipefail
 
 ###############################################################################
-# 新系统：HTTP + 公网 IP 空机一键部署脚本
-# 使用方法：只替换本段占位符，然后把全文粘贴到阿里云 Workbench，按回车运行。
+# 新系统：HTTP + 公网 IP 空机一键部署启动器
+# 使用方法：
+# 1. 只替换本段占位符。
+# 2. 把全文粘贴到阿里云 Workbench，按回车。
+# 3. 本启动器会下载仓库内最新部署脚本并执行，避免长脚本粘贴截断。
+#
 # ECS 安全组需要放行 80 端口。
 ###############################################################################
 
-APP_NAME="wailearning-new-system"
-REPO_URL="https://github.com/YinzhuCheng/wailearning-new-system.git"
-BRANCH="main"
-BACKEND_PORT="8002"
-PUBLIC_IP="<ECS_PUBLIC_IP>"
+export DEPLOY_MODE="http"
+export APP_NAME="wailearning-new-system"
+export REPO_URL="https://github.com/YinzhuCheng/wailearning-new-system.git"
+export BRANCH="main"
+export BACKEND_PORT="8002"
+export PUBLIC_IP="<ECS_PUBLIC_IP>"
 
-DB_NAME="wailearning_new"
-DB_USER="wailearning_new"
-DB_PASSWORD="<REPLACE_WITH_STRONG_DB_PASSWORD>"
+export DB_NAME="wailearning_new"
+export DB_USER="wailearning_new"
+export DB_PASSWORD="<REPLACE_WITH_STRONG_DB_PASSWORD>"
 
-INIT_ADMIN_USERNAME="admin"
-INIT_ADMIN_PASSWORD="<REPLACE_WITH_STRONG_ADMIN_PASSWORD>"
-INIT_ADMIN_REAL_NAME="New System Administrator"
+export INIT_ADMIN_USERNAME="admin"
+export INIT_ADMIN_PASSWORD="<REPLACE_WITH_STRONG_ADMIN_PASSWORD>"
+export INIT_ADMIN_REAL_NAME="New System Administrator"
+export INIT_DEFAULT_DATA="true"
 
-# 新系统已有 richer demo seed：true 会创建管理员、教师 teacher/teacher_pro、学生 stu1-stu5、
-# 班级、课程、作业、资料、学习笔记、讨论和预填提交等伪数据。
-INIT_DEFAULT_DATA="true"
+export DEFAULT_LLM_API_KEY="<REPLACE_WITH_LLM_API_KEY>"
+export SECRET_KEY="<REPLACE_WITH_RANDOM_SECRET_AT_LEAST_32_CHARS>"
 
-# 新系统已有默认 LLM preset bootstrap。填 key 后首次启动会尝试校验并启用内置 gpt-5.4 preset。
-DEFAULT_LLM_API_KEY="<REPLACE_WITH_LLM_API_KEY>"
-
-SECRET_KEY="<REPLACE_WITH_RANDOM_SECRET_AT_LEAST_32_CHARS>"
+export DEPLOY_SCRIPT_URL="https://raw.githubusercontent.com/YinzhuCheng/wailearning-new-system/main/docs/deployment/run_aliyun_deploy.sh"
 
 ###############################################################################
 # 以下内容通常不需要修改。
@@ -48,101 +50,20 @@ assert_replaced() {
   fi
 }
 
-install_node20() {
-  local node_major="0"
-  if command -v node >/dev/null 2>&1; then
-    node_major="$(node -p "parseInt(process.versions.node.split('.')[0], 10)" 2>/dev/null || echo 0)"
-  fi
-  if [ "${node_major}" -ge 20 ] 2>/dev/null; then
-    echo "Node.js $(node --version) 已满足要求。"
+ensure_downloader() {
+  if command -v curl >/dev/null 2>&1; then
     return 0
   fi
-
-  echo "安装 Node.js 20，避免系统默认 Node 12 导致 Vite 构建失败。"
-  if command -v apt-get >/dev/null 2>&1; then
-    apt-get remove -y nodejs npm 2>/dev/null || true
-    install -d -m 0755 /etc/apt/keyrings
-    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor --yes -o /etc/apt/keyrings/nodesource.gpg
-    chmod 0644 /etc/apt/keyrings/nodesource.gpg
-    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" > /etc/apt/sources.list.d/nodesource.list
-    apt-get update
-    DEBIAN_FRONTEND=noninteractive apt-get install -y nodejs
-  elif command -v dnf >/dev/null 2>&1; then
-    curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
-    dnf install -y nodejs
-  elif command -v yum >/dev/null 2>&1; then
-    curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
-    yum install -y nodejs
-  fi
-
-  node_major="$(node -p "parseInt(process.versions.node.split('.')[0], 10)" 2>/dev/null || echo 0)"
-  if [ "${node_major}" -lt 20 ] 2>/dev/null; then
-    echo "Node.js 版本仍低于 20，当前版本：$(node --version 2>/dev/null || echo 未安装)"
-    exit 1
-  fi
-  echo "Node.js $(node --version)，npm $(npm --version)"
-}
-
-install_packages() {
+  echo "当前系统缺少 curl，先安装下载工具。"
   if command -v apt-get >/dev/null 2>&1; then
     apt-get update
-    DEBIAN_FRONTEND=noninteractive apt-get install -y git curl ca-certificates gnupg nginx python3 python3-venv python3-pip postgresql postgresql-client
+    DEBIAN_FRONTEND=noninteractive apt-get install -y curl ca-certificates
   elif command -v dnf >/dev/null 2>&1; then
-    dnf install -y git curl ca-certificates nginx python3 python3-pip postgresql-server postgresql
+    dnf install -y curl ca-certificates
   elif command -v yum >/dev/null 2>&1; then
-    yum install -y git curl ca-certificates nginx python3 python3-pip postgresql-server postgresql
+    yum install -y curl ca-certificates
   else
-    echo "未识别系统包管理器，请先安装 git/curl/nginx/python3/nodejs/npm/postgresql。"
-    exit 1
-  fi
-  install_node20
-}
-
-start_postgres() {
-  if command -v postgresql-setup >/dev/null 2>&1; then
-    postgresql-setup --initdb 2>/dev/null || postgresql-setup initdb 2>/dev/null || true
-  fi
-  systemctl enable --now postgresql 2>/dev/null || systemctl enable --now postgresql-15 2>/dev/null || systemctl enable --now postgresql-14 2>/dev/null || {
-    echo "无法启动 PostgreSQL，请检查系统 PostgreSQL 服务名。"
-    exit 1
-  }
-}
-
-psql_as_postgres() {
-  if command -v runuser >/dev/null 2>&1; then
-    runuser -u postgres -- psql "$@"
-  else
-    sudo -u postgres psql "$@"
-  fi
-}
-
-wait_job() {
-  local pid="$1"
-  local label="$2"
-  local log_file="$3"
-  if wait "${pid}"; then
-    echo "完成：${label}"
-    return 0
-  fi
-  echo "失败：${label}"
-  echo "最近日志：${log_file}"
-  tail -n 120 "${log_file}" || true
-  exit 1
-}
-
-validate_backend_service() {
-  systemctl enable "${APP_NAME}.service"
-  systemctl restart "${APP_NAME}.service"
-  sleep 3
-  if ! systemctl is-active --quiet "${APP_NAME}.service"; then
-    echo "后端服务启动失败，最近日志如下："
-    systemctl status "${APP_NAME}.service" --no-pager || true
-    journalctl -u "${APP_NAME}.service" -n 120 --no-pager || true
-    exit 1
-  fi
-  if ! curl -fsS "http://127.0.0.1:${BACKEND_PORT}/api/health" >/dev/null; then
-    echo "后端健康检查失败，最近日志如下："
-    journalctl -u "${APP_NAME}.service" -n 120 --no-pager || true
+    echo "未识别系统包管理器，无法自动安装 curl。"
     exit 1
   fi
 }
@@ -153,128 +74,14 @@ assert_replaced "INIT_ADMIN_PASSWORD" "${INIT_ADMIN_PASSWORD}"
 assert_replaced "DEFAULT_LLM_API_KEY" "${DEFAULT_LLM_API_KEY}"
 assert_replaced "SECRET_KEY" "${SECRET_KEY}"
 
-echo "开始部署新系统：http://${PUBLIC_IP}/"
-install_packages
-start_postgres
+RUN_DIR="/root/${APP_NAME}-workbench"
+REMOTE_SCRIPT="${RUN_DIR}/run_aliyun_deploy.sh"
+mkdir -p "${RUN_DIR}"
 
-APP_ROOT="/opt/${APP_NAME}"
-RELEASE_DIR="${APP_ROOT}/current"
-LOG_DIR="/tmp/${APP_NAME}-deploy-$(date +%Y%m%d%H%M%S)"
-mkdir -p "${APP_ROOT}" "${APP_ROOT}/uploads" "${LOG_DIR}"
+ensure_downloader
+echo "下载仓库内最新部署脚本：${DEPLOY_SCRIPT_URL}"
+curl -fsSL --retry 3 --connect-timeout 20 "${DEPLOY_SCRIPT_URL}" -o "${REMOTE_SCRIPT}"
+chmod +x "${REMOTE_SCRIPT}"
 
-systemctl stop "${APP_NAME}.service" 2>/dev/null || true
-rm -rf "${RELEASE_DIR}"
-git clone --depth 1 --branch "${BRANCH}" "${REPO_URL}" "${RELEASE_DIR}"
-
-psql_as_postgres -v db_name="${DB_NAME}" -v db_user="${DB_USER}" -v db_password="${DB_PASSWORD}" -f "${RELEASE_DIR}/ops/scripts/init_db.sql"
-
-cd "${RELEASE_DIR}"
-cat > .env.production <<ENV_EOF
-APP_ENV=production
-DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@127.0.0.1:5432/${DB_NAME}
-SECRET_KEY=${SECRET_KEY}
-ACCESS_TOKEN_EXPIRE_MINUTES=1440
-BACKEND_CORS_ORIGINS=http://${PUBLIC_IP}
-TRUSTED_HOSTS=${PUBLIC_IP},localhost,127.0.0.1
-UPLOADS_DIR=${APP_ROOT}/uploads
-INIT_ADMIN_USERNAME=${INIT_ADMIN_USERNAME}
-INIT_ADMIN_PASSWORD=${INIT_ADMIN_PASSWORD}
-INIT_ADMIN_REAL_NAME=${INIT_ADMIN_REAL_NAME}
-INIT_DEFAULT_DATA=${INIT_DEFAULT_DATA}
-FRONTEND_ADMIN_BASE_URL=http://${PUBLIC_IP}
-ENABLE_LLM_GRADING_WORKER=true
-DEFAULT_LLM_API_KEY=${DEFAULT_LLM_API_KEY}
-REQUIRE_STRONG_SECRETS=true
-ENV_EOF
-
-echo "并行执行：后端依赖安装、学校端构建、家长端构建"
-(
-  cd "${RELEASE_DIR}"
-  python3 -m venv .venv
-  . .venv/bin/activate
-  pip install -r requirements.txt
-) > "${LOG_DIR}/backend.log" 2>&1 &
-BACKEND_PID=$!
-
-(
-  cd "${RELEASE_DIR}/apps/web/school"
-  cat > .env.production <<ENV_EOF
-VITE_API_BASE_URL=http://${PUBLIC_IP}/api
-ENV_EOF
-  npm ci
-  npm run build
-) > "${LOG_DIR}/school-frontend.log" 2>&1 &
-SCHOOL_PID=$!
-
-(
-  cd "${RELEASE_DIR}/apps/web/parent"
-  cat > .env.production <<ENV_EOF
-VITE_API_BASE_URL=http://${PUBLIC_IP}/api
-ENV_EOF
-  npm ci
-  npm run build
-) > "${LOG_DIR}/parent-portal.log" 2>&1 &
-PARENT_PID=$!
-
-wait_job "${BACKEND_PID}" "后端依赖安装" "${LOG_DIR}/backend.log"
-wait_job "${SCHOOL_PID}" "学校端构建" "${LOG_DIR}/school-frontend.log"
-wait_job "${PARENT_PID}" "家长端构建" "${LOG_DIR}/parent-portal.log"
-
-cat > "/etc/systemd/system/${APP_NAME}.service" <<SERVICE_EOF
-[Unit]
-Description=${APP_NAME}
-After=network.target postgresql.service
-
-[Service]
-Type=simple
-WorkingDirectory=${RELEASE_DIR}
-ExecStartPre=${RELEASE_DIR}/.venv/bin/python -m apps.backend.courseeval_backend.bootstrap
-ExecStart=${RELEASE_DIR}/.venv/bin/uvicorn apps.backend.courseeval_backend.main:app --host 127.0.0.1 --port ${BACKEND_PORT}
-Restart=always
-RestartSec=3
-EnvironmentFile=${RELEASE_DIR}/.env.production
-
-[Install]
-WantedBy=multi-user.target
-SERVICE_EOF
-
-cat > "/etc/nginx/conf.d/${APP_NAME}.conf" <<NGINX_EOF
-server {
-    listen 80 default_server;
-    server_name _;
-    client_max_body_size 200m;
-
-    root ${RELEASE_DIR}/apps/web/school/dist;
-    index index.html;
-
-    location /api/ {
-        proxy_pass http://127.0.0.1:${BACKEND_PORT}/;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-    }
-
-    location /parent/ {
-        alias ${RELEASE_DIR}/apps/web/parent/dist/;
-        try_files \$uri \$uri/ /parent/index.html;
-    }
-
-    location / {
-        try_files \$uri \$uri/ /index.html;
-    }
-}
-NGINX_EOF
-
-rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
-systemctl daemon-reload
-validate_backend_service
-nginx -t
-systemctl enable --now nginx
-systemctl reload nginx
-
-echo "部署完成：http://${PUBLIC_IP}/"
-echo "管理员账号：${INIT_ADMIN_USERNAME}"
-echo "伪数据开关 INIT_DEFAULT_DATA=${INIT_DEFAULT_DATA}"
-echo "默认 LLM preset API key 已写入 DEFAULT_LLM_API_KEY"
-echo "部署日志目录：${LOG_DIR}"
+echo "开始执行部署。日志会直接输出到当前 Workbench 窗口。"
+bash "${REMOTE_SCRIPT}"
