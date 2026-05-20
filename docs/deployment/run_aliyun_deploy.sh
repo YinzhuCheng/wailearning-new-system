@@ -55,7 +55,8 @@ install_node20() {
 
   echo "安装 Node.js 20，避免系统默认 Node 12 导致 Vite 构建失败。"
   if command -v apt-get >/dev/null 2>&1; then
-    apt-get remove -y nodejs npm 2>/dev/null || true
+    apt-get purge -y nodejs npm libnode-dev libnode72 nodejs-doc 2>/dev/null || true
+    apt-get autoremove -y 2>/dev/null || true
     install -d -m 0755 /etc/apt/keyrings
     curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor --yes -o /etc/apt/keyrings/nodesource.gpg
     chmod 0644 /etc/apt/keyrings/nodesource.gpg
