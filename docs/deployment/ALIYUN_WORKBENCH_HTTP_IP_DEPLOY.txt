@@ -2,9 +2,9 @@
 set -euo pipefail
 
 ###############################################################################
-# 新系统：HTTP + 公网 IP 空机部署脚本
-# 使用方法：替换本段占位符，然后把全文粘贴到阿里云 Workbench，按回车运行。
-# 安全组需要放行 80 端口。
+# 新系统：HTTP + 公网 IP 空机一键部署脚本
+# 使用方法：只替换本段占位符，然后把全文粘贴到阿里云 Workbench，按回车运行。
+# ECS 安全组需要放行 80 端口。
 ###############################################################################
 
 APP_NAME="<NEW_SYSTEM_APP_NAME>"
@@ -17,6 +17,15 @@ SECRET_KEY="<BACKEND_SECRET_KEY>"
 DEFAULT_LLM_API_KEY="<DEFAULT_LLM_API_KEY_OR_EMPTY>"
 DEFAULT_LLM_BASE_URL="<DEFAULT_LLM_BASE_URL_OR_EMPTY>"
 DEFAULT_LLM_MODEL="<DEFAULT_LLM_MODEL_OR_EMPTY>"
+
+###############################################################################
+# 以下内容通常不需要修改。
+###############################################################################
+
+if [ "$(id -u)" -ne 0 ]; then
+  echo "请用 root 用户运行。本脚本假设 Workbench 已经 root 登录。"
+  exit 1
+fi
 
 install_packages() {
   if command -v apt-get >/dev/null 2>&1; then
@@ -32,11 +41,29 @@ install_packages() {
   fi
 }
 
+wait_job() {
+  local pid="$1"
+  local label="$2"
+  local log_file="$3"
+  if wait "${pid}"; then
+    echo "完成：${label}"
+    return 0
+  fi
+  echo "失败：${label}"
+  echo "最近日志：${log_file}"
+  tail -n 120 "${log_file}" || true
+  exit 1
+}
+
+echo "开始部署新系统：http://${PUBLIC_IP}/"
 install_packages
 
 APP_ROOT="/opt/${APP_NAME}"
 RELEASE_DIR="${APP_ROOT}/current"
-mkdir -p "${APP_ROOT}"
+LOG_DIR="/tmp/${APP_NAME}-deploy-$(date +%Y%m%d%H%M%S)"
+mkdir -p "${APP_ROOT}" "${APP_ROOT}/uploads" "${LOG_DIR}"
+
+systemctl stop "${APP_NAME}.service" 2>/dev/null || true
 rm -rf "${RELEASE_DIR}"
 git clone --depth 1 --branch "${BRANCH}" "${REPO_URL}" "${RELEASE_DIR}"
 
@@ -54,24 +81,38 @@ DEFAULT_LLM_BASE_URL=${DEFAULT_LLM_BASE_URL}
 DEFAULT_LLM_MODEL=${DEFAULT_LLM_MODEL}
 ENV_EOF
 
-mkdir -p "${APP_ROOT}/uploads"
-python3 -m venv .venv
-. .venv/bin/activate
-pip install -r requirements.txt
+echo "并行执行：后端依赖安装、学校端构建、家长端构建"
+(
+  cd "${RELEASE_DIR}"
+  python3 -m venv .venv
+  . .venv/bin/activate
+  pip install -r requirements.txt
+) > "${LOG_DIR}/backend.log" 2>&1 &
+BACKEND_PID=$!
 
-cd apps/web/school
-cat > .env.production <<ENV_EOF
+(
+  cd "${RELEASE_DIR}/apps/web/school"
+  cat > .env.production <<ENV_EOF
 VITE_API_BASE_URL=http://${PUBLIC_IP}/api
 ENV_EOF
-npm ci
-npm run build
+  npm ci
+  npm run build
+) > "${LOG_DIR}/school-frontend.log" 2>&1 &
+SCHOOL_PID=$!
 
-cd ../parent
-cat > .env.production <<ENV_EOF
+(
+  cd "${RELEASE_DIR}/apps/web/parent"
+  cat > .env.production <<ENV_EOF
 VITE_API_BASE_URL=http://${PUBLIC_IP}/api
 ENV_EOF
-npm ci
-npm run build
+  npm ci
+  npm run build
+) > "${LOG_DIR}/parent-portal.log" 2>&1 &
+PARENT_PID=$!
+
+wait_job "${BACKEND_PID}" "后端依赖安装" "${LOG_DIR}/backend.log"
+wait_job "${SCHOOL_PID}" "学校端构建" "${LOG_DIR}/school-frontend.log"
+wait_job "${PARENT_PID}" "家长端构建" "${LOG_DIR}/parent-portal.log"
 
 cat > "/etc/systemd/system/${APP_NAME}.service" <<SERVICE_EOF
 [Unit]
@@ -126,3 +167,4 @@ systemctl enable --now nginx
 systemctl reload nginx
 
 echo "部署完成：http://${PUBLIC_IP}/"
+echo "部署日志目录：${LOG_DIR}"
