@@ -14,18 +14,30 @@ set -euo pipefail
 # 6. 等解析生效后运行脚本，并确认 ECS 安全组放行 80 和 443。
 ###############################################################################
 
-APP_NAME="<NEW_SYSTEM_APP_NAME>"
-REPO_URL="<NEW_SYSTEM_PUBLIC_GIT_URL>"
-BRANCH="<NEW_SYSTEM_BRANCH>"
-BACKEND_PORT="<NEW_SYSTEM_BACKEND_PORT>"
+APP_NAME="wailearning-new-system"
+REPO_URL="https://github.com/YinzhuCheng/wailearning-new-system.git"
+BRANCH="main"
+BACKEND_PORT="8002"
 DOMAIN="<NEW_SYSTEM_DOMAIN>"
-EXTRA_DOMAIN="<NEW_SYSTEM_EXTRA_DOMAIN_OR_EMPTY>"
+EXTRA_DOMAIN=""
 CERTBOT_EMAIL="<CERTBOT_EMAIL>"
-DATABASE_URL="<POSTGRES_DATABASE_URL>"
-SECRET_KEY="<BACKEND_SECRET_KEY>"
-DEFAULT_LLM_API_KEY="<DEFAULT_LLM_API_KEY_OR_EMPTY>"
-DEFAULT_LLM_BASE_URL="<DEFAULT_LLM_BASE_URL_OR_EMPTY>"
-DEFAULT_LLM_MODEL="<DEFAULT_LLM_MODEL_OR_EMPTY>"
+
+DB_NAME="wailearning_new"
+DB_USER="wailearning_new"
+DB_PASSWORD="<REPLACE_WITH_STRONG_DB_PASSWORD>"
+
+INIT_ADMIN_USERNAME="admin"
+INIT_ADMIN_PASSWORD="<REPLACE_WITH_STRONG_ADMIN_PASSWORD>"
+INIT_ADMIN_REAL_NAME="New System Administrator"
+
+# 新系统已有 richer demo seed：true 会创建管理员、教师 teacher/teacher_pro、学生 stu1-stu5、
+# 班级、课程、作业、资料、学习笔记、讨论和预填提交等伪数据。
+INIT_DEFAULT_DATA="true"
+
+# 新系统已有默认 LLM preset bootstrap。填 key 后首次启动会尝试校验并启用内置 gpt-5.4 preset。
+DEFAULT_LLM_API_KEY="<REPLACE_WITH_LLM_API_KEY>"
+
+SECRET_KEY="<REPLACE_WITH_RANDOM_SECRET_AT_LEAST_32_CHARS>"
 
 ###############################################################################
 # 以下内容通常不需要修改。
@@ -36,17 +48,44 @@ if [ "$(id -u)" -ne 0 ]; then
   exit 1
 fi
 
+assert_replaced() {
+  local name="$1"
+  local value="$2"
+  if [[ -z "${value}" || "${value}" == \<* ]]; then
+    echo "请先替换占位符：${name}"
+    exit 1
+  fi
+}
+
 install_packages() {
   if command -v apt-get >/dev/null 2>&1; then
     apt-get update
-    DEBIAN_FRONTEND=noninteractive apt-get install -y git curl ca-certificates nginx certbot python3-certbot-nginx python3 python3-venv python3-pip nodejs npm postgresql-client
+    DEBIAN_FRONTEND=noninteractive apt-get install -y git curl ca-certificates nginx certbot python3-certbot-nginx python3 python3-venv python3-pip nodejs npm postgresql postgresql-client
   elif command -v dnf >/dev/null 2>&1; then
-    dnf install -y git curl ca-certificates nginx certbot python3-certbot-nginx python3 python3-pip nodejs npm postgresql
+    dnf install -y git curl ca-certificates nginx certbot python3-certbot-nginx python3 python3-pip nodejs npm postgresql-server postgresql
   elif command -v yum >/dev/null 2>&1; then
-    yum install -y git curl ca-certificates nginx certbot python3-certbot-nginx python3 python3-pip nodejs npm postgresql
+    yum install -y git curl ca-certificates nginx certbot python3-certbot-nginx python3 python3-pip nodejs npm postgresql-server postgresql
   else
-    echo "未识别系统包管理器，请先安装 git/curl/nginx/certbot/python3/nodejs/npm/postgresql-client。"
+    echo "未识别系统包管理器，请先安装 git/curl/nginx/certbot/python3/nodejs/npm/postgresql。"
     exit 1
+  fi
+}
+
+start_postgres() {
+  if command -v postgresql-setup >/dev/null 2>&1; then
+    postgresql-setup --initdb 2>/dev/null || postgresql-setup initdb 2>/dev/null || true
+  fi
+  systemctl enable --now postgresql 2>/dev/null || systemctl enable --now postgresql-15 2>/dev/null || systemctl enable --now postgresql-14 2>/dev/null || {
+    echo "无法启动 PostgreSQL，请检查系统 PostgreSQL 服务名。"
+    exit 1
+  }
+}
+
+psql_as_postgres() {
+  if command -v runuser >/dev/null 2>&1; then
+    runuser -u postgres -- psql "$@"
+  else
+    sudo -u postgres psql "$@"
   fi
 }
 
@@ -64,8 +103,16 @@ wait_job() {
   exit 1
 }
 
+assert_replaced "DOMAIN" "${DOMAIN}"
+assert_replaced "CERTBOT_EMAIL" "${CERTBOT_EMAIL}"
+assert_replaced "DB_PASSWORD" "${DB_PASSWORD}"
+assert_replaced "INIT_ADMIN_PASSWORD" "${INIT_ADMIN_PASSWORD}"
+assert_replaced "DEFAULT_LLM_API_KEY" "${DEFAULT_LLM_API_KEY}"
+assert_replaced "SECRET_KEY" "${SECRET_KEY}"
+
 echo "开始部署新系统：https://${DOMAIN}/"
 install_packages
+start_postgres
 
 APP_ROOT="/opt/${APP_NAME}"
 RELEASE_DIR="${APP_ROOT}/current"
@@ -76,18 +123,25 @@ systemctl stop "${APP_NAME}.service" 2>/dev/null || true
 rm -rf "${RELEASE_DIR}"
 git clone --depth 1 --branch "${BRANCH}" "${REPO_URL}" "${RELEASE_DIR}"
 
+psql_as_postgres -v db_name="${DB_NAME}" -v db_user="${DB_USER}" -v db_password="${DB_PASSWORD}" -f "${RELEASE_DIR}/ops/scripts/init_db.sql"
+
 cd "${RELEASE_DIR}"
 cat > .env.production <<ENV_EOF
-DATABASE_URL=${DATABASE_URL}
+APP_ENV=production
+DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@127.0.0.1:5432/${DB_NAME}
 SECRET_KEY=${SECRET_KEY}
 ACCESS_TOKEN_EXPIRE_MINUTES=1440
-CORS_ORIGINS=https://${DOMAIN}
-UPLOAD_DIR=${APP_ROOT}/uploads
-MAX_UPLOAD_SIZE_MB=200
-INIT_DEFAULT_DATA=true
+BACKEND_CORS_ORIGINS=https://${DOMAIN}
+TRUSTED_HOSTS=${DOMAIN},localhost,127.0.0.1
+UPLOADS_DIR=${APP_ROOT}/uploads
+INIT_ADMIN_USERNAME=${INIT_ADMIN_USERNAME}
+INIT_ADMIN_PASSWORD=${INIT_ADMIN_PASSWORD}
+INIT_ADMIN_REAL_NAME=${INIT_ADMIN_REAL_NAME}
+INIT_DEFAULT_DATA=${INIT_DEFAULT_DATA}
+FRONTEND_ADMIN_BASE_URL=https://${DOMAIN}
+ENABLE_LLM_GRADING_WORKER=true
 DEFAULT_LLM_API_KEY=${DEFAULT_LLM_API_KEY}
-DEFAULT_LLM_BASE_URL=${DEFAULT_LLM_BASE_URL}
-DEFAULT_LLM_MODEL=${DEFAULT_LLM_MODEL}
+REQUIRE_STRONG_SECRETS=true
 ENV_EOF
 
 echo "并行执行：后端依赖安装、学校端构建、家长端构建"
@@ -126,11 +180,12 @@ wait_job "${PARENT_PID}" "家长端构建" "${LOG_DIR}/parent-portal.log"
 cat > "/etc/systemd/system/${APP_NAME}.service" <<SERVICE_EOF
 [Unit]
 Description=${APP_NAME}
-After=network.target
+After=network.target postgresql.service
 
 [Service]
 Type=simple
 WorkingDirectory=${RELEASE_DIR}
+ExecStartPre=${RELEASE_DIR}/.venv/bin/python -m apps.backend.courseeval_backend.bootstrap
 ExecStart=${RELEASE_DIR}/.venv/bin/uvicorn apps.backend.courseeval_backend.main:app --host 127.0.0.1 --port ${BACKEND_PORT}
 Restart=always
 RestartSec=3
@@ -183,4 +238,7 @@ certbot --nginx "${CERTBOT_ARGS[@]}" --email "${CERTBOT_EMAIL}" --agree-tos --no
 systemctl reload nginx
 
 echo "部署完成：https://${DOMAIN}/"
+echo "管理员账号：${INIT_ADMIN_USERNAME}"
+echo "伪数据开关 INIT_DEFAULT_DATA=${INIT_DEFAULT_DATA}"
+echo "默认 LLM preset API key 已写入 DEFAULT_LLM_API_KEY"
 echo "部署日志目录：${LOG_DIR}"
