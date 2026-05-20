@@ -1,0 +1,142 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+###############################################################################
+# 新系统：HTTPS + 域名空机部署脚本
+# 使用方法：替换本段占位符，然后把全文粘贴到阿里云 Workbench，按回车运行。
+#
+# 阿里云域名解析设置：
+# 1. 打开阿里云控制台。
+# 2. 进入“云解析 DNS”。
+# 3. 点击“权威域名解析”，选择你已经申请好的域名。
+# 4. 进入“解析设置”。
+# 5. 添加 A 记录：主机记录填 @、www 或 app；记录值填这台 ECS 公网 IP；TTL 保持默认。
+# 6. 等解析生效后运行脚本，并确认 ECS 安全组放行 80 和 443。
+###############################################################################
+
+APP_NAME="<NEW_SYSTEM_APP_NAME>"
+REPO_URL="<NEW_SYSTEM_PUBLIC_GIT_URL>"
+BRANCH="<NEW_SYSTEM_BRANCH>"
+BACKEND_PORT="<NEW_SYSTEM_BACKEND_PORT>"
+DOMAIN="<NEW_SYSTEM_DOMAIN>"
+EXTRA_DOMAIN="<NEW_SYSTEM_EXTRA_DOMAIN_OR_EMPTY>"
+CERTBOT_EMAIL="<CERTBOT_EMAIL>"
+DATABASE_URL="<POSTGRES_DATABASE_URL>"
+SECRET_KEY="<BACKEND_SECRET_KEY>"
+DEFAULT_LLM_API_KEY="<DEFAULT_LLM_API_KEY_OR_EMPTY>"
+DEFAULT_LLM_BASE_URL="<DEFAULT_LLM_BASE_URL_OR_EMPTY>"
+DEFAULT_LLM_MODEL="<DEFAULT_LLM_MODEL_OR_EMPTY>"
+
+install_packages() {
+  if command -v apt-get >/dev/null 2>&1; then
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y git curl ca-certificates nginx certbot python3-certbot-nginx python3 python3-venv python3-pip nodejs npm postgresql-client
+  elif command -v dnf >/dev/null 2>&1; then
+    dnf install -y git curl ca-certificates nginx certbot python3-certbot-nginx python3 python3-pip nodejs npm postgresql
+  elif command -v yum >/dev/null 2>&1; then
+    yum install -y git curl ca-certificates nginx certbot python3-certbot-nginx python3 python3-pip nodejs npm postgresql
+  else
+    echo "未识别系统包管理器，请先安装 git/curl/nginx/certbot/python3/nodejs/npm/postgresql-client。"
+    exit 1
+  fi
+}
+
+install_packages
+
+APP_ROOT="/opt/${APP_NAME}"
+RELEASE_DIR="${APP_ROOT}/current"
+mkdir -p "${APP_ROOT}"
+rm -rf "${RELEASE_DIR}"
+git clone --depth 1 --branch "${BRANCH}" "${REPO_URL}" "${RELEASE_DIR}"
+
+cd "${RELEASE_DIR}"
+cat > .env.production <<ENV_EOF
+DATABASE_URL=${DATABASE_URL}
+SECRET_KEY=${SECRET_KEY}
+ACCESS_TOKEN_EXPIRE_MINUTES=1440
+CORS_ORIGINS=https://${DOMAIN}
+UPLOAD_DIR=${APP_ROOT}/uploads
+MAX_UPLOAD_SIZE_MB=200
+INIT_DEFAULT_DATA=true
+DEFAULT_LLM_API_KEY=${DEFAULT_LLM_API_KEY}
+DEFAULT_LLM_BASE_URL=${DEFAULT_LLM_BASE_URL}
+DEFAULT_LLM_MODEL=${DEFAULT_LLM_MODEL}
+ENV_EOF
+
+mkdir -p "${APP_ROOT}/uploads"
+python3 -m venv .venv
+. .venv/bin/activate
+pip install -r requirements.txt
+
+cd apps/web/school
+cat > .env.production <<ENV_EOF
+VITE_API_BASE_URL=https://${DOMAIN}/api
+ENV_EOF
+npm ci
+npm run build
+
+cd ../parent
+cat > .env.production <<ENV_EOF
+VITE_API_BASE_URL=https://${DOMAIN}/api
+ENV_EOF
+npm ci
+npm run build
+
+cat > "/etc/systemd/system/${APP_NAME}.service" <<SERVICE_EOF
+[Unit]
+Description=${APP_NAME}
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=${RELEASE_DIR}
+ExecStart=${RELEASE_DIR}/.venv/bin/uvicorn apps.backend.courseeval_backend.main:app --host 127.0.0.1 --port ${BACKEND_PORT}
+Restart=always
+RestartSec=3
+EnvironmentFile=${RELEASE_DIR}/.env.production
+
+[Install]
+WantedBy=multi-user.target
+SERVICE_EOF
+
+cat > "/etc/nginx/conf.d/${APP_NAME}.conf" <<NGINX_EOF
+server {
+    listen 80;
+    server_name ${DOMAIN} ${EXTRA_DOMAIN};
+    client_max_body_size 200m;
+
+    root ${RELEASE_DIR}/apps/web/school/dist;
+    index index.html;
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:${BACKEND_PORT}/;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+
+    location /parent/ {
+        alias ${RELEASE_DIR}/apps/web/parent/dist/;
+        try_files \$uri \$uri/ /parent/index.html;
+    }
+
+    location / {
+        try_files \$uri \$uri/ /index.html;
+    }
+}
+NGINX_EOF
+
+rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
+systemctl daemon-reload
+systemctl enable --now "${APP_NAME}.service"
+nginx -t
+systemctl enable --now nginx
+systemctl reload nginx
+
+CERTBOT_ARGS=(-d "${DOMAIN}")
+if [ -n "${EXTRA_DOMAIN}" ]; then CERTBOT_ARGS+=(-d "${EXTRA_DOMAIN}"); fi
+certbot --nginx "${CERTBOT_ARGS[@]}" --email "${CERTBOT_EMAIL}" --agree-tos --no-eff-email --redirect
+systemctl reload nginx
+
+echo "部署完成：https://${DOMAIN}/"

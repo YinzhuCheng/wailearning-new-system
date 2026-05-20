@@ -1,0 +1,4 @@
+interface:
+  display_name: "Permission Audit"
+  short_description: "Audit CourseEval backend authorization and role boundaries."
+  default_prompt: "Use this skill to review or change CourseEval permissions safely."

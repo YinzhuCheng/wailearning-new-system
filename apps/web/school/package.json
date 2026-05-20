@@ -1,0 +1,34 @@
+{
+  "name": "courseeval-school",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "test:appeals": "node scripts/test-appeal-notification-actions.cjs",
+    "preview": "vite preview",
+    "test:e2e": "playwright test",
+    "test:e2e:external": "node scripts/playwright-external-runner.cjs",
+    "test:e2e:ui": "playwright test --ui",
+    "capture:homework-layout": "node scripts/capture-homework-layout-runner.cjs",
+    "capture:student-homework-layout": "node scripts/capture-student-homework-layout-runner.cjs",
+    "capture:student-material-reader": "node scripts/capture-student-material-reader-runner.cjs"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.1",
+    "axios": "^1.6.5",
+    "echarts": "^5.4.3",
+    "element-plus": "^2.5.2",
+    "katex": "^0.16.11",
+    "markdown-it": "^14.1.0",
+    "pinia": "^2.1.7",
+    "vue": "^3.4.15",
+    "vue-router": "^4.2.5",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@vitejs/plugin-vue": "^5.0.3",
+    "vite": "^5.0.11"
+  }
+}

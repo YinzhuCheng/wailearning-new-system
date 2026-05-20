@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "description": "Committed ownership and validation metadata for high-risk repository paths.",
+  "paths": [
+    {
+      "path": "apps/backend/courseeval_backend/db/",
+      "owner_area": "schema-and-persistence",
+      "risk_class": "critical",
+      "required_validation_families": [
+        "static.schema_governance",
+        "postgres.pytest.package",
+        "full.pytest.postgres"
+      ],
+      "migration_sensitivity": "high"
+    },
+    {
+      "path": "apps/backend/courseeval_backend/api/schema_defs/",
+      "owner_area": "api-surface-and-schemas",
+      "risk_class": "high",
+      "required_validation_families": [
+        "static.api_surface_governance",
+        "static.boundary_governance"
+      ],
+      "migration_sensitivity": "medium"
+    },
+    {
+      "path": "apps/backend/courseeval_backend/domains/roster/",
+      "owner_area": "roster-and-student-identity",
+      "risk_class": "high",
+      "required_validation_families": [
+        "backend.roster.student_user_api_sync",
+        "backend.roster.student_identity_audit",
+        "backend.roster.student_identity_repair",
+        "backend.courses.student_course_roster_behavior",
+        "behavior.course_roster_homework_edge"
+      ],
+      "migration_sensitivity": "high"
+    },
+    {
+      "path": "tests/e2e/web-school/",
+      "owner_area": "school-browser-harness",
+      "risk_class": "high",
+      "required_validation_families": [
+        "frontend.school.build",
+        "school.e2e.full"
+      ],
+      "migration_sensitivity": "medium"
+    }
+  ]
+}

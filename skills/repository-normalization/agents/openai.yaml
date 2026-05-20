@@ -1,0 +1,4 @@
+interface:
+  display_name: "Repository Normalization"
+  short_description: "Coordinate CourseEval repo governance and route to specialized skills."
+  default_prompt: "Use this skill to align CourseEval repository governance with current implementation and choose the right downstream skills."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Seed Surface Hardening"
+  short_description: "Harden CourseEval seed, reset, bootstrap, and E2E dev surfaces."
+  default_prompt: "Use this skill to review CourseEval seed or E2E dev route changes safely."

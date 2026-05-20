@@ -1,0 +1,307 @@
+test_id,category,scope,canonical_command,working_directory,relevant_paths,retest_triggers,last_branch,last_commit,last_result,last_run_date,pass_count,run_count
+backend.learning_notes.api,backend-pytest,"Focused backend API regressions for learning-note visibility, owner-only mutation, course-bound public notes, all-authenticated public notes without subject_id, note-owned copied outline/resources, note discussion metadata, and attendance date-only parsing used by the embedded attendance/calendar workflow.",.venv\Scripts\python.exe -m pytest tests\backend\learning_notes\test_learning_notes_api.py -q,<repo>,"tests/backend/learning_notes/test_learning_notes_api.py
+apps/backend/courseeval_backend/api/routers/learning_notes.py
+apps/backend/courseeval_backend/api/routers/attendance.py
+apps/backend/courseeval_backend/api/schemas.py
+apps/backend/courseeval_backend/db/models.py
+tests/scenarios/llm_scenario.py","Changes to learning-note CRUD, visibility, copy-from-course, chapter/resource mutation, or discussion routes.
+Changes to payload.model_fields_set handling or any schema where explicit null should differ from omitted fields.
+Changes to attendance create/list/stat endpoints or date parsing behavior.
+Changes to course access helpers used by learning-note public visibility.
+Changes to DB reset or schema bootstrap behavior that can affect focused backend tests.",cursor/beautify-ui,6a95aad,passed,2026-05-07,5,6
+frontend.school.build,frontend-build,"Production build for the school SPA package. This catches Vue/Vite import, syntax, bundling, and asset pipeline regressions before browser E2E is interpreted.",npm.cmd run build,<repo>/apps/web/school,"apps/web/school/package.json
+apps/web/school/vite.config.js
+apps/web/school/src/
+apps/web/school/playwright.config.cjs
+tests/e2e/web-school/","Changes under apps/web/school/src/.
+Changes to school frontend dependencies, package scripts, Vite config, or TypeScript/Vue build config.
+Changes to frontend route definitions, shared API clients, or components used by E2E targets.
+Changes that add or remove static assets consumed by the school SPA.",cursor/beautify-ui,this commit,passed,2026-05-09,10,10
+school.e2e.course_ui_markdown_reader,school-playwright,"Targeted school Playwright suite for student course UI, Markdown/LaTeX demos, material reader navigation, materials layout, sidebar active-state mapping, and course-related redirect behavior.",node scripts/playwright-external-runner.cjs e2e-course-ui-markdown-reader.spec.js --project=chromium,<repo>/apps/web/school,"tests/e2e/web-school/e2e-course-ui-markdown-reader.spec.js
+tests/e2e/web-school/fixtures.cjs
+apps/web/school/playwright.config.cjs
+apps/web/school/src/views/Materials.vue
+apps/web/school/src/views/MaterialRead.vue
+apps/web/school/src/views/StudentCourseHome.vue
+apps/web/school/src/components/CourseDiscussionPanel.vue
+apps/web/school/src/router/index.js","Changes to material list, material detail dialog, material reader route, or material reader navigation controls.
+Changes to discussion composer Markdown/LaTeX preview, demo toggle behavior, row expansion, or posted Markdown rendering.
+Changes to admin sidebar active-route mapping, course student UI, or /teaching-calendar redirect behavior.
+Changes to Playwright global setup, E2E seed/reset helpers, seeded credentials, or school webServer setup.",cursor/beautify-ui,this commit,timed out,2026-05-09,0,2
+school.e2e.discussion_cover_llm_tier3,school-playwright,"Targeted school Playwright suite for discussion LLM assistant controls, long-body preview expansion/collapse, discussion pagination reset behavior, material-dialog discussion flow, and course cover API/UI surfaces.",node scripts/playwright-external-runner.cjs e2e-discussion-cover-llm-tier3.spec.js --project=chromium,<repo>/apps/web/school,"tests/e2e/web-school/e2e-discussion-cover-llm-tier3.spec.js
+tests/e2e/web-school/fixtures.cjs
+apps/web/school/playwright.config.cjs
+apps/web/school/src/components/CourseDiscussionPanel.vue
+apps/web/school/src/views/HomeworkSubmission.vue
+apps/web/school/src/views/HomeworkSubmissions.vue
+apps/web/school/src/views/Materials.vue
+apps/web/school/src/views/MyCourses.vue
+apps/web/school/src/views/Subjects.vue","Changes to CourseDiscussionPanel.vue, discussion row truncation/expansion, discussion pagination, LLM composer behavior, or posted assistant polling.
+Changes to homework submission/submissions pages that host course discussions.
+Changes to materials detail dialog discussion behavior.
+Changes to course cover upload/display behavior in course catalog, course cards, or materials page banners.
+Changes to Playwright global setup, E2E seed/reset helpers, seeded credentials, mock LLM helpers, or school webServer setup.",cursor/beautify-ui,this commit,timed out,2026-05-09,0,2
+school.e2e.learning_notes_attendance_cover_tier20,school-playwright,"Targeted school Playwright tier for newer learning-note, course-cover, and attendance/calendar surfaces. Covers learning-note private/public visibility, public unbound notes visible to authenticated users, course-bound public notes, copied course outline/material snapshots, copied-note editing with explicit null, discussion metadata, page_size validation, learning-notes UI tabs and default-private dialog, course-card cover visibility, /teaching-calendar redirect to embedded attendance, and course/date-scoped attendance filtering.",node scripts/playwright-external-runner.cjs e2e-learning-notes-attendance-cover-tier20.spec.js --project=chromium,<repo>/apps/web/school,"tests/e2e/web-school/e2e-learning-notes-attendance-cover-tier20.spec.js
+tests/e2e/web-school/fixtures.cjs
+tests/e2e/web-school/future-advanced-coverage-helpers.cjs
+apps/web/school/playwright.config.cjs
+apps/web/school/src/views/LearningNotes.vue
+apps/web/school/src/views/Attendance.vue
+apps/web/school/src/views/MyCourses.vue
+apps/web/school/src/views/StudentCourseHome.vue
+apps/web/school/src/router/index.js
+apps/backend/courseeval_backend/api/routers/learning_notes.py
+apps/backend/courseeval_backend/api/routers/attendance.py
+apps/backend/courseeval_backend/api/routers/e2e_dev.py","Changes to learning notes API routes, schemas, visibility rules, copied chapters/resources, or note discussion behavior.
+Changes to attendance API routes, date parsing, course filtering, or teaching-calendar embedding.
+Changes to course cover upload/display semantics or course-card rendering.
+Changes to LearningNotes.vue, Attendance.vue, MyCourses.vue, StudentCourseHome.vue, or shared course-card components.
+Changes to school SPA routing around /teaching-calendar, /attendance, /learning-notes, or course entry.
+Changes to Playwright global setup, E2E seed/reset helpers, seeded credentials, or API base helpers.",cursor/beautify-ui,this commit,timed out,2026-05-09,2,3
+backend.e2e_dev.demo_course_seed,backend-pytest,"Focused backend coverage for default demo course seed data used by local installs and E2E reset helpers. This target verifies demo teachers, canonical student users and Student rows, required/elective courses, course LLM bindings, structured teaching calendar times, course materials, homework, prefilled submissions, multi-attempt homework history, course discussions with fake LLM assistant participation, and seeded student learning notes.",.venv\Scripts\python.exe -m pytest tests\backend\e2e_dev\test_demo_course_seed.py -q,<repo>,"apps/backend/courseeval_backend/domains/seed/demo.py
+apps/backend/courseeval_backend/api/routers/e2e_dev.py
+apps/backend/courseeval_backend/db/models.py
+apps/backend/courseeval_backend/api/routers/discussions.py
+apps/backend/courseeval_backend/api/routers/learning_notes.py
+tests/backend/e2e_dev/test_demo_course_seed.py
+tests/backend/e2e_dev/test_demo_llm_seed_and_student_quota_edges.py","Changes to default/demo seed data, seeded credentials, seeded courses, or E2E reset scenario behavior.
+Changes to Subject.course_times, weekly_schedule, course calendar serialization, or subject response fields.
+Changes to homework submissions, attempts, iteration history, or LLM grading summary refresh behavior.
+Changes to course discussion or learning note models, routes, assistant-message serialization, or system LLM assistant user bootstrap.
+Changes to canonical student/user binding that affect demo users or reconcile_student_users_and_roster.",cursor/unify-student-identity-plan,this commit,passed,2026-05-09,3,4
+school.e2e.core_flows_smoke,school-playwright,"Core school Playwright smoke for the managed FastAPI + Vite + Chromium path. Covers stable login selectors, invalid login behavior, admin landing, student required-course card and homework list, teacher materials and notifications routes, admin user grid, class-teacher home, and student course-home rendering.",npx.cmd playwright test e2e-core-flows-smoke.spec.js --project=chromium,<repo>/apps/web/school,"tests/e2e/web-school/e2e-core-flows-smoke.spec.js
+tests/e2e/web-school/global-setup.cjs
+tests/e2e/web-school/fixtures.cjs
+apps/web/school/playwright.config.cjs
+apps/backend/courseeval_backend/api/routers/e2e_dev.py
+apps/backend/courseeval_backend/core/auth.py
+ops/scripts/dev/playwright_preflight.py
+ops/scripts/dev/run_validation_target.py","Changes to Playwright global setup, fixtures, seed/reset helpers, seeded credentials, or API base helpers.
+Changes to apps/web/school/playwright.config.cjs, managed webServer startup, E2E_PYTHON, E2E_DEV_SEED_TOKEN, or port handling.
+Changes to login, auth token handling, staff/student route guards, or first-load navigation.
+Changes to ops/scripts/dev/playwright_preflight.py or runner behavior for category: school-playwright targets.
+Any claim that local Playwright infrastructure has been repaired after environment blockers.",cursor/unify-student-identity-plan,this commit,passed,2026-05-08,3,5
+static.repo_line_health,static-check,"Repository-wide text-line health metrics for documentation, tests, primary source, and supporting categories. This is not a behavioral test; it is a tracked metric command that helps future agents notice repository evolution and avoid confusing generated/lockfile growth with application-code growth.",python ops\scripts\dev\repo_line_health.py,<repo>,"ops/scripts/dev/repo_line_health.py
+docs/testing/DEVELOPMENT_AND_TESTING.md
+docs/reference/CODE_MAP_AND_ENTRYPOINTS.md
+docs/testing/TEST_EXECUTION_LEDGER.md","Changes to ops/scripts/dev/repo_line_health.py.
+Changes to repository layout, especially app source roots, test roots, documentation roots, or generated/lockfile placement.
+Changes to .gitignore or tracking policy that may alter which files are counted by git ls-files.
+Any documentation or process change that uses line counts as a health indicator.",cursor/discussion-avatar-chat-ui-921d,this commit,passed,2026-05-09,3,3
+backend.llm.attachment_formats,backend-pytest,"Focused backend attachment extraction and classification tests for plain text, Office formats, zip nesting, and RAR fixture handling. The RAR cases exercise committed archives under tests/fixtures/llm_rar/ and must execute when unrar, unrar-free, or a compatible libarchive-backed tar / bsdtar is available.",.venv\Scripts\python.exe -m pytest tests\backend\llm\test_llm_attachment_formats.py -q,<repo>,"tests/backend/llm/test_llm_attachment_formats.py
+tests/fixtures/llm_rar/
+tests/backend/files/
+apps/backend/courseeval_backend/attachments.py
+apps/backend/courseeval_backend/domains/llm/attachments.py
+apps/backend/courseeval_backend/attachment_compliance.py
+apps/backend/courseeval_backend/llm_grading.py","Changes to attachment classification, extraction, archive walking, or RAR/zip safety checks.
+Changes to generic upload validation, download-by-name ACL, or attachment endpoint safety behavior.
+Changes to upload compliance for .rar or .zip files.
+Changes to committed RAR fixtures or fixture-generation assumptions.
+Changes to environment provisioning rules for unrar, unrar-free, tar, or bsdtar.",cursor/repository-normalization,this commit,passed,2026-05-12,3,3
+postgres.pytest.package,postgres-pytest,"PostgreSQL-only pytest package under tests/postgres/. This target proves dialect-specific schema, constraint, and transactional behavior that SQLite intentionally cannot cover.","$env:TEST_DATABASE_URL='postgresql+psycopg2://courseeval_test:courseeval_test@127.0.0.1:<local-port>/courseeval_pytest_all'
+.venv\Scripts\python.exe -m pytest tests\postgres -q",<repo>,"tests/postgres/
+tests/conftest.py
+tests/db_reset.py
+ops/scripts/dev/provision_postgres_pytest.sh
+docs/testing/DEVELOPMENT_AND_TESTING.md
+docs/testing/TEST_EXECUTION_PITFALLS.md","Changes to database models, migrations/repair logic, quota schema, FK constraints, or raw SQL in tests.
+Changes to tests/db_reset.py, tests/conftest.py, or PostgreSQL provisioning docs/scripts.
+Claims of full-suite or zero-skip pytest validation.",cursor/repository-normalization,023a6cf,passed,2026-05-13,5,7
+security.api_regression,security-pytest,"Broad API security regression coverage for unauthenticated access, role boundaries, admin-only routes, IDOR edges, invalid tokens, and abuse cases. This target is recommended when auth, permission helpers, class/course access, or high-risk routers such as /api/users change.",.venv\Scripts\python.exe -m pytest tests\security -q,<repo>,"tests/security/test_security_regression.py
+tests/security/test_security_hardening_followup.py
+apps/backend/courseeval_backend/core/auth.py
+apps/backend/courseeval_backend/api/routers/classes.py
+apps/backend/courseeval_backend/domains/courses/access.py
+apps/backend/courseeval_backend/api/routers/auth.py
+apps/backend/courseeval_backend/api/routers/users.py
+apps/backend/courseeval_backend/api/routers/homework.py
+apps/backend/courseeval_backend/api/routers/llm_settings.py
+apps/backend/courseeval_backend/api/routers/notifications.py
+apps/backend/courseeval_backend/api/routers/attendance.py
+apps/backend/courseeval_backend/api/routers/files.py
+apps/backend/courseeval_backend/api/routers/e2e_dev.py
+apps/backend/courseeval_backend/attachments.py
+apps/backend/courseeval_backend/attachment_compliance.py
+apps/backend/courseeval_backend/core/config.py","Changes to authentication, permission dependencies, or role boundary helpers.
+Changes to /api/users, /api/classes, homework authorization, LLM admin routes, notification visibility/target-scope validation, attendance writes, file attachment ACL, or E2E dev seed gates.
+Changes that introduce or relax admin-only behavior, student self-service behavior, IDOR-sensitive resource lookup, token validation, or seed-token/admin-JWT requirements.",cursor/repository-normalization,this commit,passed,2026-05-13,16,21
+backend.courses.student_course_roster_behavior,backend-pytest,"Focused backend course/roster regression file for student account to roster synchronization, required-course enrollment sync, homework submission access, teacher enrollment counts, duplicate student numbers, course removal blocks, sync-enrollments repair, and related class/course invariants.",.venv\Scripts\python.exe -m pytest tests\backend\courses\test_student_course_roster_behavior.py -q,<repo>,"tests/backend/courses/test_student_course_roster_behavior.py
+apps/backend/courseeval_backend/domains/courses/access.py
+apps/backend/courseeval_backend/domains/roster/reconciliation.py
+apps/backend/courseeval_backend/api/routers/auth.py
+apps/backend/courseeval_backend/api/routers/homework.py
+apps/backend/courseeval_backend/api/routers/subjects.py","Changes to prepare_student_course_context, sync_student_course_enrollments, sync_course_enrollments, or sync_student_roster_from_user_accounts.
+Changes to student login behavior, public registration, admin-created student users, or student account to roster synchronization.
+Changes to required-course class linking, course enrollment blocks, roster enroll/sync endpoints, or homework submission authorization.
+Any full PostgreSQL pytest run that reports failures in course/roster tests.",cursor/repository-normalization,this commit,passed,2026-05-12,9,10
+full.pytest.postgres,full-suite,Full pytest tree under tests/ with TEST_DATABASE_URL pointing at a throwaway PostgreSQL database. This is the production-aligned backend regression profile for eliminating PostgreSQL-only skips and exercising schema/dialect behavior alongside the default backend and behavior suites.,"$env:TEST_DATABASE_URL='postgresql+psycopg2://courseeval_test:courseeval_test@127.0.0.1:<local-port>/courseeval_pytest_all'
+.venv\Scripts\python.exe -m pytest tests -q",<repo>,"tests/
+tests/conftest.py
+tests/db_reset.py
+tests/postgres/
+docs/testing/DEVELOPMENT_AND_TESTING.md
+docs/testing/TEST_EXECUTION_PITFALLS.md
+docs/testing/TEST_EXECUTION_LEDGER.md","Claims of full-suite, release-quality, or zero-skip backend validation.
+Changes to database models, schema repair, test reset behavior, PostgreSQL provisioning, LLM quota schema, roster/course sync, homework access, or attachment extraction.
+Any broad backend, behavior, security, or PostgreSQL test change.",cursor/discussion-avatar-chat-ui-921d,this commit,passed,2026-05-07,4,5
+static.encoding_text_tools,static-check,"Static and smoke validation for repository UTF-8 / mojibake-safety helpers. This target proves the helper scripts compile, the PowerShell session helper can execute in quiet mode, safe text display works for documentation, selected tracked files decode as UTF-8, and the current diff has no whitespace errors.",".venv\Scripts\python.exe -m py_compile ops\scripts\dev\safe_show_text.py ops\scripts\dev\safe_write_text.py ops\scripts\dev\check_text_encoding.py
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File ops\scripts\windows\set-utf8-session.ps1 -Quiet
+.venv\Scripts\python.exe ops\scripts\dev\safe_show_text.py docs\contributing\ENCODING_AND_MOJIBAKE_SAFETY.md --start-line 1 --end-line 12 --escape
+'encoding helper smoke' | .venv\Scripts\python.exe ops\scripts\dev\safe_write_text.py .e2e-run\encoding-helper-smoke.txt --stdin --replace --mkdirs
+.venv\Scripts\python.exe ops\scripts\dev\check_text_encoding.py ops\scripts\dev\safe_show_text.py ops\scripts\dev\safe_write_text.py ops\scripts\dev\check_text_encoding.py ops\scripts\windows\set-utf8-session.ps1 docs\contributing\ENCODING_AND_MOJIBAKE_SAFETY.md docs\testing\DEVELOPMENT_AND_TESTING.md docs\testing\TEST_EXECUTION_PITFALLS.md docs\testing\TEST_EXECUTION_LEDGER.md
+git diff --check",<repo>,"ops/scripts/windows/set-utf8-session.ps1
+ops/scripts/dev/safe_show_text.py
+ops/scripts/dev/safe_write_text.py
+ops/scripts/dev/check_text_encoding.py
+docs/contributing/ENCODING_AND_MOJIBAKE_SAFETY.md
+docs/testing/DEVELOPMENT_AND_TESTING.md
+docs/testing/TEST_EXECUTION_PITFALLS.md
+docs/testing/TEST_EXECUTION_LEDGER.md","Changes to any UTF-8 / mojibake helper script under ops/scripts/dev/ or ops/scripts/windows/.
+Changes to encoding-safety documentation, Windows notes, or pitfalls that cite these helpers.
+Changes to text-file classification or suspicious-marker rules in check_text_encoding.py.
+Any branch that deliberately repairs suspected mojibake in tracked files.",cursor/repository-normalization,04297f4,passed,2026-05-10,7,7
+backend.roster.student_user_api_sync,backend-pytest,"Focused roster/user API coverage for admin-created student users, canonical Student binding, reserved temporary-class backfill for missing class assignment, and user-to-roster synchronization. This target verifies /api/users creates and updates student accounts into the same students + users.student_id model used by student-management and import flows.",.venv\Scripts\python.exe -m pytest tests\backend\roster\test_student_user_api_roster_sync.py -q,<repo>,"tests/backend/roster/test_student_user_api_roster_sync.py
+tests/backend/roster/test_admin_student_roster_from_users.py
+apps/backend/courseeval_backend/api/routers/users.py
+apps/backend/courseeval_backend/api/routers/students.py
+apps/backend/courseeval_backend/api/schemas.py
+apps/backend/courseeval_backend/domains/roster/reconciliation.py
+apps/backend/courseeval_backend/domains/roster/sync.py
+apps/backend/courseeval_backend/domains/roster/identity.py","Changes to /api/users create/update behavior for student-role users.
+Changes to UserCreate, UserUpdate, or UserResponse student/class binding schemas.
+Changes to sync_student_roster_from_user_accounts or sync_student_user_from_roster_row.
+Changes to canonical users.student_id binding, temporary-class backfill, or user-first student creation.
+Changes to admin user-management UI that claims student users may be created before class assignment.",cursor/unify-student-identity-plan,this commit,passed,2026-05-09,5,8
+backend.roster.student_identity_audit,backend-pytest,"Focused backend audit coverage for canonical Student identity and users.student_id migration prechecks. This target verifies the read-only audit report for clean bindings, students without accounts, student users without canonical students, safe legacy username == student_no binding candidates, duplicate student numbers, ambiguous user/student matches, invalid bindings, bound username/student-number mismatches, and unassigned students.",.venv\Scripts\python.exe -m pytest tests\backend\roster\test_student_identity_audit.py -q,<repo>,"apps/backend/courseeval_backend/domains/roster/audit.py
+apps/backend/courseeval_backend/domains/roster/identity.py
+ops/scripts/dev/audit_student_identity.py
+tests/backend/roster/test_student_identity_audit.py
+apps/backend/courseeval_backend/db/models.py","Changes to canonical student/user binding rules, especially users.student_id.
+Changes to legacy recovery by username == student_no.
+Changes to Student.class_id, temporary-class backfill, or duplicate student-number constraints.
+Changes to migration/audit scripts that inspect or repair student identity data.
+Any branch that prepares automatic student identity data conversion.",cursor/unify-student-identity-plan,this commit,passed,2026-05-09,4,5
+backend.roster.student_identity_repair,backend-pytest,"Focused backend repair coverage for default/new-system student account migration into canonical Student rows and explicit users.student_id bindings. This target verifies dry-run reporting, applying safe default-data repair, creating missing student accounts from Student rows, creating missing Student rows from student users, and blocking ambiguous duplicate-student-number repairs.",.venv\Scripts\python.exe -m pytest tests\backend\roster\test_student_identity_repair.py -q,<repo>,"apps/backend/courseeval_backend/domains/roster/repair.py
+apps/backend/courseeval_backend/domains/roster/audit.py
+apps/backend/courseeval_backend/domains/roster/identity.py
+apps/backend/courseeval_backend/domains/roster/sync.py
+apps/backend/courseeval_backend/domains/roster/reconciliation.py
+ops/scripts/dev/repair_student_identity.py
+tests/backend/roster/test_student_identity_repair.py
+apps/backend/courseeval_backend/domains/seed/demo.py
+apps/backend/courseeval_backend/bootstrap.py","Changes to default/demo student seed data.
+Changes to reconcile_student_users_and_roster or user-to-roster repair behavior.
+Changes to canonical student/user binding rules, especially legacy username == student_no recovery.
+Changes to repair CLI output, dry-run/apply semantics, or ambiguity blocking.",cursor/unify-student-identity-plan,this commit,passed,2026-05-09,9,11
+static.validation_selector,static-check,"Static and smoke validation for the first-version diff-based validation target selector. This target proves the selector script compiles, the machine-readable registry is valid JSON, representative path-based recommendations work, pitfall fuzzy lookup works, the selector can read target-level history from this ledger, and the runners can write ignored structured local history, pytest JUnit result summaries, and profile-level summaries.",".venv\Scripts\python.exe -m py_compile ops\scripts\dev\select_validation_targets.py ops\scripts\dev\run_validation_target.py ops\scripts\dev\run_validation_profile.py ops\scripts\dev\validation_history.py ops\scripts\dev\search_pitfalls.py tests\backend\manual\test_validation_selector.py
+.venv\Scripts\python.exe ops\scripts\dev\select_validation_targets.py --paths apps\backend\courseeval_backend\api\routers\learning_notes.py
+.venv\Scripts\python.exe ops\scripts\dev\select_validation_targets.py --paths ops\scripts\dev\select_validation_targets.py tests\TEST_SELECTION_TARGETS.json --json
+.venv\Scripts\python.exe ops\scripts\dev\select_validation_targets.py --worktree --json
+python -m unittest tests.backend.manual.test_validation_selector -v
+python ops\scripts\dev\run_validation_target.py static.validation_selector --dry-run",<repo>,"ops/scripts/dev/select_validation_targets.py
+ops/scripts/dev/run_validation_target.py
+ops/scripts/dev/run_validation_profile.py
+ops/scripts/dev/validation_history.py
+ops/scripts/dev/search_pitfalls.py
+tests/TEST_SELECTION_TARGETS.json
+tests/backend/manual/test_validation_selector.py
+docs/testing/DEVELOPMENT_AND_TESTING.md
+docs/testing/TEST_SUITE_MAP.md
+docs/testing/TEST_EXECUTION_LEDGER.md","Changes to the selector or pitfall-search scripts.
+Changes to the machine-readable target registry.
+Changes to the ledger heading or strict field format parsed by the selector.
+Changes to validation-profile documentation or target-selection policy.
+Changes to path matching semantics, fallback rules, or risk-level ordering.
+Changes to structured local history schema, signature calculation, or runner history writing.
+Changes to validation profile policy, risk filtering, or review-target execution defaults.",cursor/repository-normalization,43cef79,passed,2026-05-13,18,18
+backend.scores.dashboard_course_scope,backend-pytest,"Focused score/dashboard API target for subject-scoped teacher visibility, score composition, grade appeals, and course-owned dashboard stats/rankings.",.venv\Scripts\python.exe -m pytest tests\backend\integration\test_core_api_surface.py tests\backend\scores\test_score_composition.py -q,<repo>,"tests/backend/integration/test_core_api_surface.py
+tests/backend/scores/test_score_composition.py
+apps/backend/courseeval_backend/api/routers/dashboard.py
+apps/backend/courseeval_backend/api/routers/scores.py
+apps/backend/courseeval_backend/domains/scores/composition.py
+apps/backend/courseeval_backend/domains/scores/appeals.py
+apps/backend/courseeval_backend/domains/courses/access.py","Changes to score/dashboard routes, subject-scoped teacher visibility, score composition, grade appeals, or course access helpers used by dashboard/scores endpoints.
+Escalate to security or full PostgreSQL validation for shared auth, schema, or broad course-access changes.",cursor/repository-normalization,this commit,passed,2026-05-12,2,2
+behavior.notifications.sync_api_edge,behavior-pytest,"Behavior pytest target for notification list/sync-status alignment, concurrent read-state updates, and subject-scoped authorization edges and target-scope regressions.",.venv\Scripts\python.exe -m pytest tests\behavior\test_notification_sync_api_edge_behavior.py -q,<repo>,"tests/behavior/test_notification_sync_api_edge_behavior.py
+apps/backend/courseeval_backend/api/routers/notifications.py
+apps/backend/courseeval_backend/domains/courses/access.py
+apps/backend/courseeval_backend/api/schemas.py
+apps/web/school/src/views/Layout.vue
+apps/web/school/src/views/Notifications.vue","Changes to notification list or sync-status behavior.
+Changes to read-state convergence, subject-scoped notification authorization, or course access helpers used by notification routes.
+Pair with notification Playwright tiers when browser state convergence or course switcher behavior changes.",cursor/repository-normalization,this commit,passed,2026-05-13,4,4
+behavior.course_roster_homework_edge,behavior-pytest,"Behavior pytest target for course, roster, homework, score appeal, and enrollment edge interactions.",.venv\Scripts\python.exe -m pytest tests\behavior\test_course_roster_homework_edge_behavior.py -q,<repo>,"tests/behavior/test_course_roster_homework_edge_behavior.py
+apps/backend/courseeval_backend/domains/courses/access.py
+apps/backend/courseeval_backend/domains/roster/reconciliation.py
+apps/backend/courseeval_backend/api/routers/homework.py
+apps/backend/courseeval_backend/api/routers/subjects.py
+apps/backend/courseeval_backend/api/routers/students.py","Changes to course access, roster reconciliation, enrollment sync, homework authorization, score appeal edges, or student/class route behavior.
+Escalate to PostgreSQL full consideration when schema or broad course access helpers change.",cursor/repository-normalization,this commit,passed,2026-05-11,1,1
+school.e2e.security_hardening_followup,school-playwright,"Small browser-backed security hardening slice for localStorage role tampering, direct student API mutation attempts, and E2E dev seed-token-only rejection on powerful endpoints.",node scripts\playwright-external-runner.cjs e2e-security-hardening-followup.spec.js --project=chromium,<repo>/apps/web/school,"tests/e2e/web-school/e2e-security-hardening-followup.spec.js
+tests/e2e/web-school/e2e-seed-headers.cjs
+tests/e2e/web-school/fixtures.cjs
+tests/e2e/web-school/future-advanced-coverage-helpers.cjs
+apps/web/school/src/views/Login.vue
+apps/web/school/src/router/index.js
+apps/backend/courseeval_backend/api/routers/auth.py
+apps/backend/courseeval_backend/api/routers/users.py
+apps/backend/courseeval_backend/api/routers/subjects.py
+apps/backend/courseeval_backend/api/routers/e2e_dev.py
+apps/backend/courseeval_backend/core/auth.py
+apps/backend/courseeval_backend/core/config.py","Changes to browser auth storage handling, login token persistence, frontend route guards, /api/users authorization, /api/subjects mutation authorization, /api/e2e/dev gates, or E2E seed header helpers.
+Pair with security.api_regression for backend-only authorization changes.",cursor/repository-normalization,this commit,passed,2026-05-12,5,6
+school.e2e.parent_portal_hardening,school-playwright,"Browser-backed parent portal hardening suite for parent-code login binding, same-class elective homework/notification leakage, and parent Vite runner startup.",node scripts\playwright-external-runner.cjs e2e-parent-portal-hardening.spec.js --project=chromium,<repo>/apps/web/school,"tests/e2e/web-school/e2e-parent-portal-hardening.spec.js
+tests/e2e/web-school/fixtures.cjs
+tests/e2e/web-school/future-advanced-coverage-helpers.cjs
+apps/web/school/scripts/playwright-external-runner.cjs
+apps/web/parent/src/api/index.js
+apps/web/parent/src/router/index.js
+apps/web/parent/src/views/Login.vue
+apps/web/parent/src/views/Home.vue
+apps/web/parent/src/views/Homework.vue
+apps/web/parent/src/views/Notifications.vue
+apps/backend/courseeval_backend/api/routers/parent.py
+apps/backend/courseeval_backend/api/routers/e2e_dev.py","Changes to parent portal login, routing, API client, homework/notification UI, parent-code backend reads, E2E seed parent_code setup, or the external runner parent-UI startup path.
+Pair with security.api_regression for backend-only parent-code or parent-read authorization changes.",cursor/repository-normalization,this commit,passed,2026-05-12,1,2
+school.e2e.notification_sync_deep_tier,school-playwright,"Deeper notification sync Playwright tier for admin global totals, course switch discipline, localStorage poison healing, concurrent publishes, role/class isolation, mobile viewport, cold polling, delete races, multi-class course header-badge boundaries, admin-only global notification write scope, notification target-user denial, UI composer course/class scope, and explicit notification target-clearing updates.",node scripts\playwright-external-runner.cjs e2e-notification-sync-deep-tier.spec.js --project=chromium,<repo>/apps/web/school,"tests/e2e/web-school/e2e-notification-sync-deep-tier.spec.js
+tests/e2e/web-school/future-advanced-coverage-helpers.cjs
+apps/web/school/src/views/Layout.vue
+apps/web/school/src/views/Notifications.vue
+apps/backend/courseeval_backend/api/routers/notifications.py
+apps/backend/courseeval_backend/domains/courses/access.py
+docs/frontend/NOTIFICATION_HEADER_AND_REALTIME_SYNC.md","Changes to notification header badge convergence, course switcher state, selected_course localStorage handling, notification list/sync-status/read-state routes, notification class/subject visibility, notification target fields, or multi-class course notification semantics.
+Pair with behavior.notifications.sync_api_edge and security.api_regression when backend notification visibility changes.",cursor/repository-normalization,this commit,passed,2026-05-13,3,5
+school.e2e.cross_cutting_edge,school-playwright,"Cross-cutting school Playwright edge suite for multi-role interleaving, token lifecycle, validation-boundary responses, and API-plus-UI convergence under concurrency.",node scripts/playwright-external-runner.cjs e2e-cross-cutting-edge.spec.js --project=chromium,<repo>/apps/web/school,"tests/e2e/web-school/e2e-cross-cutting-edge.spec.js
+apps/web/school/src/views/Login.vue
+apps/web/school/src/views/Layout.vue
+apps/web/school/src/views/Notifications.vue
+apps/web/school/src/router/index.js
+apps/backend/courseeval_backend/api/routers/auth.py
+apps/backend/courseeval_backend/api/routers/notifications.py
+apps/backend/courseeval_backend/api/routers/e2e_dev.py
+apps/backend/courseeval_backend/core/auth.py","Changes to the spec itself.
+Changes to login token persistence, multi-role browser routing, notification convergence, or mixed API-plus-UI edge handling covered by the suite.
+Use this targeted browser check when auth/notification edge semantics change but a full Playwright pass would be disproportionate.",cursor/repository-normalization-schema-notifications,this commit,not run,2026-05-13,0,0
+school.e2e.redteam_auth_notification_samples,school-playwright,"Self-organized WAI-VALID target for one-file E2E red-team samples covering auth rollback, same-context login races, selected_course cache poisoning, and parallel login isolation.",".venv\Scripts\python.exe ops\scripts\dev\wai_valid_supervisor.py --run-id e2e-redteam-auth-notification-samples --replace-run-dir --block self-organized-e2e-redteam --concurrency 10 --regression-mode light --playwright-shard-timeout-seconds 1200 --sample tests/e2e/web-school/e2e-redteam-auth-login-me-failure-rollback.spec.js --sample tests/e2e/web-school/e2e-redteam-notification-same-context-tabs.spec.js --sample tests/e2e/web-school/e2e-redteam-selected-course-cache-poison-badge.spec.js --sample tests/e2e/web-school/e2e-redteam-parallel-login-context-isolation.spec.js",<repo>,"tests/e2e/web-school/e2e-redteam-auth-login-me-failure-rollback.spec.js
+tests/e2e/web-school/e2e-redteam-notification-same-context-tabs.spec.js
+tests/e2e/web-school/e2e-redteam-selected-course-cache-poison-badge.spec.js
+tests/e2e/web-school/e2e-redteam-parallel-login-context-isolation.spec.js
+apps/web/school/src/api/index.js
+apps/web/school/src/stores/user.js
+apps/web/school/src/views/Login.vue
+apps/web/school/src/views/Layout.vue
+apps/web/school/src/views/Notifications.vue
+tests/e2e/web-school/fixtures.cjs
+tests/e2e/web-school/future-advanced-coverage-helpers.cjs
+ops/scripts/dev/wai_valid_supervisor.py","Changes to auth bootstrap rollback, frontend 401 session handling, localStorage login/session helpers, selected_course healing, notification header badge convergence, same-context tabs, or WAI-VALID Playwright shard scheduling.
+Keep samples one spec file per attack so arbitrary sample blocks can schedule them independently.",cursor/repository-normalization-schema-notifications,this commit,passed,2026-05-19,1,1
+school.e2e.homework_appeal_stale_tabs,school-playwright,"Targeted school Playwright suite for teacher stale-tab homework-appeal convergence, terminal-state conflict recovery, review/appeal interleave, and reload-safe non-actionable detail state.",node scripts/playwright-external-runner.cjs e2e-homework-appeal-stale-tabs.spec.js --project=chromium,<repo>/apps/web/school,"tests/e2e/web-school/e2e-homework-appeal-stale-tabs.spec.js
+tests/e2e/web-school/fixtures.cjs
+tests/e2e/web-school/future-advanced-coverage-helpers.cjs
+apps/web/school/src/views/HomeworkSubmissionReview.vue
+apps/web/school/src/views/HomeworkSubmissions.vue
+apps/backend/courseeval_backend/api/routers/homework.py
+apps/backend/courseeval_backend/domains/appeal_notifications.py","Changes to stale-tab homework-appeal browser recovery, terminal-state detail-page rendering, teacher review/appeal interleave, or homework-appeal notification projection in the school UI.
+Pair with backend homework appeal pytest when API-only terminal-state invariants change.",cursor/repository-normalization-schema-notifications,not run,not run,,0,0
+backend.files.attachment_api,backend-pytest,"Focused backend file upload/download API regressions for attachment response shape, upload compliance, stored-name downloads, and course cover-image upload reuse.",.venv\Scripts\python.exe -m pytest tests\backend\files -q,<repo>,"tests/backend/files/; apps/backend/courseeval_backend/api/routers/files.py; apps/backend/courseeval_backend/api/routers/subjects.py; apps/backend/courseeval_backend/api/schema_defs/files.py; apps/backend/courseeval_backend/attachments.py; apps/backend/courseeval_backend/attachment_compliance.py","Changes to file upload/download routes, upload response DTOs, attachment compliance, stored-name download ACL behavior, or course cover-image upload reuse.",cursor/repository-normalization,this commit,passed,2026-05-13,1,1

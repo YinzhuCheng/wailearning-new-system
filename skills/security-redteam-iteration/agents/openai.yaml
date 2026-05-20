@@ -1,0 +1,4 @@
+interface:
+  display_name: "Security Red-Team Iteration"
+  short_description: "Run CourseEval hardening rounds with tests, fixes, docs, ledgers, and commits."
+  default_prompt: "Use this skill to continue a CourseEval security hardening iteration."

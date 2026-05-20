@@ -1,0 +1,15 @@
+{
+  "lanes": {
+    "backend-quick-pytest": {
+      "thresholds": {
+        "failures_max": 0,
+        "errors_max": 0,
+        "skipped_max": 9999,
+        "deselected_max": 0,
+        "xfailed_max": 0,
+        "xpassed_max": 0
+      },
+      "notes": "Quick lane budgets fail on hard failures but currently tolerate skips while zero-skip parity is still deferred from the lightweight CI lane."
+    }
+  }
+}

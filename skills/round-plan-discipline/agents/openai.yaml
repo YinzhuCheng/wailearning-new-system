@@ -1,0 +1,4 @@
+interface:
+  display_name: "Round Plan Discipline"
+  short_description: "Run long tasks in explicit rounds or interruption mode with plan re-read and closeout discipline."
+  default_prompt: "Use this skill to execute the task in explicit rounds, with either continuous or interruption-mode pauses, plan review, AGENTS.md closeout, and local commits without push."

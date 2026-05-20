@@ -1,0 +1,4 @@
+interface:
+  display_name: "Validation Ledger Maintenance"
+  short_description: "Maintain CourseEval validation registry and CSV ledgers."
+  default_prompt: "Use this skill to update CourseEval validation targets or ledger rows safely."

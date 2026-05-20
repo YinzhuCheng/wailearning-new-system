@@ -1,0 +1,2607 @@
+{
+    "version": 1,
+    "description": "Machine-readable conservative mapping from changed repository paths to validation targets. This registry drives ops/scripts/dev/select_validation_targets.py. It complements docs/testing/test-execution-targets.csv, test-execution-runs.csv, pitfall-index.csv, and agent-update-log.csv; it does not replace the ledger of observed runs.",
+    "defaults": {
+        "repo_root_placeholder": "<repo>",
+        "selection_policy": "conservative",
+        "path_matching": "Repository-relative paths with forward slashes. Exact path entries also match descendants when they end with '/'. Glob entries use Python fnmatch semantics."
+    },
+    "risk_levels": {
+        "static": "No runtime product behavior is exercised. Use for docs, tooling, encoding, formatting, and repository hygiene.",
+        "targeted": "Focused test target for a bounded product or UI surface.",
+        "broad": "Broad target that should be considered when shared harness, shared fixtures, auth, routing, or high-blast-radius files change.",
+        "full": "Expensive full validation profile. Use when the changed surface makes target-only evidence too weak."
+    },
+    "targets": [
+        {
+            "id": "static.encoding_text_tools",
+            "category": "static-check",
+            "risk": "static",
+            "description": "UTF-8, mojibake-safety, whitespace, and docs/tooling hygiene checks for encoding-sensitive or documentation-only changes.",
+            "working_directory": ".",
+            "coverage_tags": [
+                "encoding-tooling",
+                "documentation",
+                "static"
+            ],
+            "commands": [
+                {
+                    "label": "diff whitespace",
+                    "argv": [
+                        "git",
+                        "diff",
+                        "--check"
+                    ]
+                },
+                {
+                    "label": "changed text encoding scan",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "ops/scripts/dev/check_text_encoding.py",
+                        "--skip-if-empty",
+                        "<changed-text-files>"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    ".env.production",
+                    ".gitignore",
+                    ".github/workflows/",
+                    "AGENTS.md",
+                    "README.md",
+                    "docs/",
+                    "skills/",
+                    "ops/scripts/windows/set-utf8-session.ps1",
+                    "ops/scripts/dev/safe_show_text.py",
+                    "ops/scripts/dev/safe_write_text.py",
+                    "ops/scripts/dev/check_text_encoding.py",
+                    "ops/scripts/init_db.sql",
+                    "ops/scripts/"
+                ],
+                "globs": [
+                    "*.md",
+                    ".env.production",
+                    ".github/workflows/*.yml",
+                    ".github/workflows/*.yaml",
+                    "docs/**/*.md",
+                    "docs/**/*.txt",
+                    "skills/**/SKILL.md",
+                    "skills/**/agents/*.yaml",
+                    "ops/scripts/*.sh",
+                    "ops/scripts/*.sql",
+                    "ops/scripts/dev/*.py",
+                    "ops/scripts/*.ps1",
+                    "ops/scripts/windows/*.ps1",
+                    "ops/scripts/windows/*.bat"
+                ]
+            },
+            "ledger_id": "static.encoding_text_tools",
+            "notes": "This target is intentionally recommended for docs and text-tooling diffs. It is not a substitute for product tests when source files change."
+        },
+        {
+            "id": "static.validation_selector",
+            "category": "static-check",
+            "risk": "static",
+            "description": "Static validation for the diff-based validation selector and its machine-readable target registry.",
+            "working_directory": ".",
+            "coverage_tags": [
+                "validation-selector",
+                "static",
+                "tooling"
+            ],
+            "commands": [
+                {
+                    "label": "compile selector",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "py_compile",
+                        "ops/scripts/dev/select_validation_targets.py",
+                        "ops/scripts/dev/run_validation_target.py",
+                        "ops/scripts/dev/run_validation_profile.py",
+                        "ops/scripts/dev/validation_history.py",
+                        "ops/scripts/dev/check_repo_skills.py",
+                        "ops/scripts/dev/lint_validation_registry.py",
+                        "ops/scripts/dev/sync_testing_governance_docs.py",
+                        "ops/scripts/dev/search_pitfalls.py",
+                        "tests/backend/manual/test_validation_selector.py"
+                    ]
+                },
+                {
+                    "label": "selector smoke",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "ops/scripts/dev/select_validation_targets.py",
+                        "--paths",
+                        "ops/scripts/dev/select_validation_targets.py",
+                        "tests/TEST_SELECTION_TARGETS.json",
+                        "--json"
+                    ]
+                },
+                {
+                    "label": "registry lint",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "ops/scripts/dev/lint_validation_registry.py"
+                    ]
+                },
+                {
+                    "label": "testing governance doc sync",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "ops/scripts/dev/sync_testing_governance_docs.py",
+                        "--check"
+                    ]
+                },
+                {
+                    "label": "pitfall index line sync",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "ops/scripts/dev/sync_pitfall_index_lines.py",
+                        "--check"
+                    ]
+                },
+                {
+                    "label": "validation debt registry",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "ops/scripts/dev/check_validation_debt_registry.py"
+                    ]
+                },
+                {
+                    "label": "validation lane budget config",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "ops/scripts/dev/check_validation_lane_budgets.py",
+                        "--lane",
+                        "backend-quick-pytest",
+                        "--budgets",
+                        "docs/testing/validation-lane-budgets.json",
+                        "--validate-only"
+                    ]
+                },
+                {
+                    "label": "high-risk path metadata",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "ops/scripts/dev/check_high_risk_path_metadata.py"
+                    ]
+                },
+                {
+                    "label": "runner smoke",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "ops/scripts/dev/run_validation_target.py",
+                        "static.validation_selector",
+                        "--dry-run"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "ops/scripts/dev/select_validation_targets.py",
+                    "ops/scripts/dev/run_validation_target.py",
+                    "ops/scripts/dev/run_validation_profile.py",
+                    "ops/scripts/dev/validation_history.py",
+                    "ops/scripts/dev/check_repo_skills.py",
+                    "ops/scripts/dev/lint_validation_registry.py",
+                    "ops/scripts/dev/sync_testing_governance_docs.py",
+                    "ops/scripts/dev/sync_pitfall_index_lines.py",
+                    "ops/scripts/dev/check_validation_debt_registry.py",
+                    "ops/scripts/dev/check_validation_lane_budgets.py",
+                    "ops/scripts/dev/check_high_risk_path_metadata.py",
+                    "ops/scripts/dev/search_pitfalls.py",
+                    "ops/scripts/dev/migrate_test_ledgers_to_csv.py",
+                    "tests/backend/manual/test_validation_selector.py",
+                    "tests/TEST_SELECTION_TARGETS.json",
+                    "docs/governance/high-risk-path-metadata.json",
+                    "docs/testing/DEVELOPMENT_AND_TESTING.md",
+                    "docs/testing/TEST_EXECUTION_LEDGER.md",
+                    "docs/testing/TEST_EXECUTION_TARGETS.md",
+                    "docs/testing/TEST_EXECUTION_RUNS.md",
+                    "docs/testing/TEST_EXECUTION_SUMMARY.md",
+                    "docs/testing/PITFALL_INDEX.md",
+                    "docs/testing/test-execution-targets.csv",
+                    "docs/testing/test-execution-runs.csv",
+                    "docs/testing/test-execution-summary.csv",
+                    "docs/testing/pitfall-index.csv",
+                    "docs/testing/agent-update-log.csv",
+                    "docs/testing/validation-debt-registry.csv",
+                    "docs/testing/validation-lane-budgets.json",
+                    "docs/testing/TEST_SUITE_MAP.md"
+                ],
+                "globs": [
+                    "ops/scripts/dev/select_validation_targets.py",
+                    "ops/scripts/dev/run_validation_target.py",
+                    "ops/scripts/dev/run_validation_profile.py",
+                    "ops/scripts/dev/validation_history.py",
+                    "ops/scripts/dev/lint_validation_registry.py",
+                    "ops/scripts/dev/sync_testing_governance_docs.py",
+                    "ops/scripts/dev/sync_pitfall_index_lines.py",
+                    "ops/scripts/dev/check_validation_debt_registry.py",
+                    "ops/scripts/dev/check_validation_lane_budgets.py",
+                    "ops/scripts/dev/check_high_risk_path_metadata.py",
+                    "ops/scripts/dev/search_pitfalls.py",
+                    "ops/scripts/dev/migrate_test_ledgers_to_csv.py",
+                    "tests/backend/manual/test_validation_selector.py",
+                    "tests/TEST_SELECTION_TARGETS.json",
+                    "docs/testing/*.csv"
+                ]
+            },
+            "ledger_id": "static.validation_selector",
+            "notes": "First-version target; add a ledger entry after this selector is first committed and observed."
+        },
+        {
+            "id": "static.operator_scripts_governance",
+            "category": "static-check",
+            "risk": "static",
+            "description": "Cross-platform static governance checks for production operator scripts, deployment helpers, and database bootstrap SQL.",
+            "working_directory": ".",
+            "coverage_tags": [
+                "operator-scripts",
+                "deployment",
+                "static"
+            ],
+            "commands": [
+                {
+                    "label": "compile operator script check",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "py_compile",
+                        "ops/scripts/dev/check_operator_scripts.py"
+                    ]
+                },
+                {
+                    "label": "operator script governance",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "ops/scripts/dev/check_operator_scripts.py"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "ops/scripts/deploy_all.sh",
+                    "ops/scripts/deploy_backend.sh",
+                    "ops/scripts/deploy_frontend.sh",
+                    "ops/scripts/deploy_parent_portal.sh",
+                    "ops/scripts/example_safe_upgrade_aliyun.sh",
+                    "ops/scripts/init_db.sql",
+                    "ops/scripts/post_deploy_check.sh",
+                    "ops/scripts/pull_and_deploy.sh",
+                    "ops/scripts/redeploy.sh",
+                    "ops/scripts/reset_user_password.sh",
+                    "ops/scripts/set-password.sh",
+                    "ops/scripts/setup_server.sh",
+                    "ops/scripts/lib/deploy_repo_dir.sh",
+                    "ops/scripts/lib/git_sync_server.sh",
+                    "ops/scripts/dev/check_operator_scripts.py",
+                    "docs/operations/DEPLOYMENT_AND_OPERATIONS.md",
+                    "docs/contributing/GIT_WORKFLOW.md"
+                ],
+                "globs": [
+                    "ops/scripts/*.sh",
+                    "ops/scripts/*.sql",
+                    "ops/scripts/lib/*.sh"
+                ]
+            },
+            "ledger_id": null,
+            "notes": "This target does not execute Bash or contact services. Use it as a governance guardrail before Linux-only syntax/runtime checks."
+        },
+        {
+            "id": "static.ci_baseline_governance",
+            "category": "static-check",
+            "risk": "static",
+            "description": "Static governance checks for aligned CI runtime baselines and canonical install/test commands across GitHub Actions and reference external pipelines.",
+            "working_directory": ".",
+            "coverage_tags": [
+                "ci-baselines",
+                "validation-tooling",
+                "static"
+            ],
+            "commands": [
+                {
+                    "label": "compile CI baseline check",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "py_compile",
+                        "ops/scripts/dev/check_ci_baselines.py"
+                    ]
+                },
+                {
+                    "label": "CI baseline governance",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "ops/scripts/dev/check_ci_baselines.py"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    ".github/workflows/lightweight-validation.yml",
+                    "ops/ci/pr-pipeline.yml",
+                    "ops/ci/master-pipeline.yml",
+                    "ops/ci/branch-pipeline.yml",
+                    "ops/scripts/dev/check_ci_baselines.py",
+                    "docs/testing/CI_AND_VALIDATION.md"
+                ],
+                "globs": [
+                    ".github/workflows/*.yml",
+                    ".github/workflows/*.yaml",
+                    "ops/ci/*.yml"
+                ]
+            },
+            "ledger_id": null,
+            "notes": "Use this static target when CI entrypoints, runtime-version baselines, or CI validation docs change."
+        },
+        {
+            "id": "static.repo_line_health",
+            "category": "static-check",
+            "risk": "static",
+            "description": "Repository line-health metrics for structure, documentation, test-code, and primary-source trend checks.",
+            "working_directory": ".",
+            "coverage_tags": [
+                "repository-health",
+                "documentation",
+                "static"
+            ],
+            "commands": [
+                {
+                    "label": "line health",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "ops/scripts/dev/repo_line_health.py"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "ops/scripts/dev/repo_line_health.py",
+                    "docs/testing/DEVELOPMENT_AND_TESTING.md",
+                    "docs/reference/CODE_MAP_AND_ENTRYPOINTS.md",
+                    "docs/testing/TEST_EXECUTION_LEDGER.md",
+                    ".gitignore"
+                ],
+                "globs": [
+                    "docs/architecture/REPOSITORY_*.md"
+                ]
+            },
+            "ledger_id": "static.repo_line_health",
+            "notes": "Recommended when repository layout, tracking policy, or line-health tooling changes."
+        },
+        {
+            "id": "static.repo_local_skills",
+            "category": "static-check",
+            "risk": "static",
+            "description": "Static validation for repo-local CourseEval skills and their lightweight agent metadata.",
+            "working_directory": ".",
+            "coverage_tags": [
+                "skills",
+                "agent-governance",
+                "static"
+            ],
+            "commands": [
+                {
+                    "label": "compile skill check",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "py_compile",
+                        "ops/scripts/dev/check_repo_skills.py"
+                    ]
+                },
+                {
+                    "label": "repo-local skill check",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "ops/scripts/dev/check_repo_skills.py"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "skills/",
+                    "ops/scripts/dev/check_repo_skills.py",
+                    "AGENTS.md",
+                    "docs/README.md"
+                ],
+                "globs": [
+                    "skills/**/SKILL.md",
+                    "skills/**/agents/*.yaml",
+                    "skills/**/scripts/*"
+                ]
+            },
+            "ledger_id": null,
+            "notes": "This intentionally avoids external PyYAML so skill sanity checks run in the normal repo environment."
+        },
+        {
+            "id": "static.docs_governance",
+            "category": "static-check",
+            "risk": "static",
+            "description": "Static documentation-governance checks for required entrypoints, governance skill indexing, Markdown links, and likely stale path mentions.",
+            "working_directory": ".",
+            "coverage_tags": [
+                "documentation",
+                "governance",
+                "static"
+            ],
+            "commands": [
+                {
+                    "label": "compile docs governance check",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "py_compile",
+                        "ops/scripts/dev/governance_common.py",
+                        "ops/scripts/dev/check_docs_governance.py"
+                    ]
+                },
+                {
+                    "label": "docs governance check",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "ops/scripts/dev/check_docs_governance.py"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "ops/scripts/dev/governance_common.py",
+                    "ops/scripts/dev/check_docs_governance.py",
+                    "skills/docs-governance/SKILL.md",
+                    "skills/docs-governance/agents/openai.yaml",
+                    "AGENTS.md",
+                    "README.md",
+                    "docs/README.md",
+                    "docs/reports/README.md"
+                ],
+                "globs": [
+                    "docs/**/*.md"
+                ]
+            },
+            "ledger_id": null,
+            "notes": "Warnings for intentionally historical path mentions must be reviewed before treating the target as failed."
+        },
+        {
+            "id": "static.boundary_governance",
+            "category": "static-check",
+            "risk": "static",
+            "description": "Static boundary-governance checks for large files and suspicious backend import edges such as router-to-router imports.",
+            "working_directory": ".",
+            "coverage_tags": [
+                "module-boundaries",
+                "import-boundaries",
+                "static"
+            ],
+            "commands": [
+                {
+                    "label": "compile boundary governance check",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "py_compile",
+                        "ops/scripts/dev/governance_common.py",
+                        "ops/scripts/dev/check_boundary_governance.py",
+                        "ops/scripts/dev/inventory_api_schemas.py"
+                    ]
+                },
+                {
+                    "label": "boundary governance check",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "ops/scripts/dev/check_boundary_governance.py",
+                        "--details"
+                    ]
+                },
+                {
+                    "label": "api schema inventory",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "ops/scripts/dev/inventory_api_schemas.py",
+                        "--fail-on-missing-imports"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "ops/scripts/dev/governance_common.py",
+                    "ops/scripts/dev/check_boundary_governance.py",
+                    "ops/scripts/dev/inventory_api_schemas.py",
+                    "apps/backend/courseeval_backend/api/schema_defs/",
+                    "skills/boundary-governance/SKILL.md",
+                    "skills/boundary-governance/agents/openai.yaml",
+                    "docs/architecture/BACKEND_PACKAGE_STRUCTURE.md",
+                    "docs/reference/CODE_MAP_AND_ENTRYPOINTS.md"
+                ],
+                "globs": [
+                    "apps/backend/courseeval_backend/api/schema_defs/*.py",
+                    "apps/backend/courseeval_backend/domains/**/*.py"
+                ]
+            },
+            "ledger_id": null,
+            "notes": "Large-file findings are warnings and should usually become a documented follow-up unless a focused refactor task is in scope."
+        },
+        {
+            "id": "static.structure_governance",
+            "category": "static-check",
+            "risk": "static",
+            "description": "Static structure-governance checks for root-file hygiene, duplicate root semantics, tiny docs, and safe structural cleanup.",
+            "working_directory": ".",
+            "coverage_tags": [
+                "repository-structure",
+                "root-hygiene",
+                "static"
+            ],
+            "commands": [
+                {
+                    "label": "compile structure governance check",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "py_compile",
+                        "ops/scripts/dev/governance_common.py",
+                        "ops/scripts/dev/check_structure_governance.py"
+                    ]
+                },
+                {
+                    "label": "structure governance check",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "ops/scripts/dev/check_structure_governance.py",
+                        "--details"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "ops/scripts/dev/governance_common.py",
+                    "ops/scripts/dev/check_structure_governance.py",
+                    "skills/structure-governance/SKILL.md",
+                    "skills/structure-governance/agents/openai.yaml",
+                    "docs/architecture/REPOSITORY_STRUCTURE.md",
+                    "docs/architecture/BACKEND_PACKAGE_STRUCTURE.md",
+                    ".gitignore"
+                ],
+                "globs": [
+                    "docs/architecture/*.md",
+                    "docs/reports/README.md"
+                ]
+            },
+            "ledger_id": null,
+            "notes": "This target uses Git ignore rules so private `.env`, `.agent-run`, and other ignored local artifacts are not treated as source layout."
+        },
+        {
+            "id": "static.schema_governance",
+            "category": "static-check",
+            "risk": "static",
+            "description": "Static governance checks for CourseEval ORM model, bootstrap.ensure_schema_updates compatibility DDL, and no-Alembic schema documentation anchors.",
+            "working_directory": ".",
+            "coverage_tags": [
+                "schema-governance",
+                "data-migration",
+                "static"
+            ],
+            "commands": [
+                {
+                    "label": "compile schema governance check",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "py_compile",
+                        "ops/scripts/dev/check_schema_governance.py",
+                        "tests/backend/manual/test_validation_selector.py"
+                    ]
+                },
+                {
+                    "label": "schema governance check",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "ops/scripts/dev/check_schema_governance.py"
+                    ]
+                },
+                {
+                    "label": "selector unittest coverage",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "unittest",
+                        "tests.backend.manual.test_validation_selector",
+                        "-v"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "ops/scripts/dev/check_schema_governance.py",
+                    "skills/data-migration-audit/SKILL.md",
+                    "apps/backend/courseeval_backend/db/models.py",
+                    "apps/backend/courseeval_backend/bootstrap.py",
+                    "docs/reference/DATA_MODEL_ESSENTIALS.md",
+                    "docs/operations/ADMIN_BOOTSTRAP.md",
+                    "docs/governance/known-issues-and-risks.md",
+                    "tests/backend/manual/test_validation_selector.py"
+                ],
+                "globs": [
+                    "skills/data-migration-audit/**"
+                ]
+            },
+            "ledger_id": null,
+            "notes": "This is a static governance guardrail. It does not replace PostgreSQL-backed migration or schema validation for release-quality claims."
+        },
+        {
+            "id": "static.api_surface_governance",
+            "category": "static-check",
+            "risk": "static",
+            "description": "Static governance checks for FastAPI router registration, router prefixes, frontend API client bases, and API-surface documentation anchors.",
+            "working_directory": ".",
+            "coverage_tags": [
+                "api-surface",
+                "frontend-api-client",
+                "static"
+            ],
+            "commands": [
+                {
+                    "label": "compile API surface governance check",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "py_compile",
+                        "ops/scripts/dev/check_api_surface_governance.py",
+                        "tests/backend/manual/test_validation_selector.py"
+                    ]
+                },
+                {
+                    "label": "API surface governance check",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "ops/scripts/dev/check_api_surface_governance.py"
+                    ]
+                },
+                {
+                    "label": "selector unittest coverage",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "unittest",
+                        "tests.backend.manual.test_validation_selector",
+                        "-v"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "ops/scripts/dev/check_api_surface_governance.py",
+                    "skills/api-surface-audit/SKILL.md",
+                    "apps/backend/courseeval_backend/main.py",
+                    "apps/backend/courseeval_backend/api/schemas.py",
+                    "apps/backend/courseeval_backend/api/schema_defs/",
+                    "apps/web/school/src/api/index.js",
+                    "apps/web/parent/src/api/index.js",
+                    "docs/reference/CODE_MAP_AND_ENTRYPOINTS.md",
+                    "docs/reference/PERMISSIONS_AND_SECURITY_BOUNDARIES.md",
+                    "docs/testing/DEVELOPMENT_AND_TESTING.md",
+                    "tests/backend/manual/test_validation_selector.py"
+                ],
+                "globs": [
+                    "apps/backend/courseeval_backend/api/routers/*.py",
+                    "apps/backend/courseeval_backend/api/schema_defs/*.py",
+                    "skills/api-surface-audit/**"
+                ]
+            },
+            "ledger_id": null,
+            "notes": "This is a static guardrail for route/client/doc drift. It is not a complete OpenAPI export or a substitute for API regression tests."
+        },
+        {
+            "id": "static.local_test_guardrails",
+            "category": "static-check",
+            "risk": "static",
+            "description": "Static validation for local test-environment guardrails that diagnose pytest SQLite, process, and harness hazards without mutating local state.",
+            "working_directory": ".",
+            "coverage_tags": [
+                "local-test-triage",
+                "pytest-sqlite",
+                "static"
+            ],
+            "commands": [
+                {
+                    "label": "compile local test guard",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "py_compile",
+                        "ops/scripts/dev/pytest_sqlite_guard.py",
+                        "tests/backend/manual/test_validation_selector.py"
+                    ]
+                },
+                {
+                    "label": "pytest sqlite guard json smoke",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "ops/scripts/dev/pytest_sqlite_guard.py",
+                        "--json"
+                    ]
+                },
+                {
+                    "label": "selector unittest coverage",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "unittest",
+                        "tests.backend.manual.test_validation_selector",
+                        "-v"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "ops/scripts/dev/pytest_sqlite_guard.py",
+                    "skills/local-test-triage/SKILL.md",
+                    "docs/testing/DEVELOPMENT_AND_TESTING.md",
+                    "docs/testing/TEST_EXECUTION_PITFALLS.md",
+                    "docs/governance/known-issues-and-risks.md",
+                    "tests/backend/manual/test_validation_selector.py"
+                ],
+                "globs": [
+                    "ops/scripts/dev/pytest_sqlite_guard.py"
+                ]
+            },
+            "ledger_id": null,
+            "notes": "This guardrail is read-only. It reports active pytest processes and the shared SQLite file state; it does not kill processes or delete test.sqlite."
+        },
+        {
+            "id": "backend.user_profile.appearance_styles",
+            "category": "backend-pytest",
+            "risk": "targeted",
+            "description": "Focused backend API regressions for user profile appearance presets, personal style save/select/clear flows, and appearance-related public settings.",
+            "working_directory": ".",
+            "coverage_tags": [
+                "appearance",
+                "user-profile",
+                "backend-api"
+            ],
+            "commands": [
+                {
+                    "label": "pytest",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "pytest",
+                        "tests/backend/user_profile/test_appearance_styles.py",
+                        "-q"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/backend/user_profile/test_appearance_styles.py",
+                    "apps/backend/courseeval_backend/api/routers/appearance.py",
+                    "apps/backend/courseeval_backend/api/schema_defs/appearance.py"
+                ],
+                "globs": []
+            },
+            "ledger_id": null,
+            "notes": "Use for appearance schema/router changes. This target is API-focused and does not replace school frontend visual checks."
+        },
+        {
+            "id": "backend.learning_notes.api",
+            "category": "backend-pytest",
+            "risk": "targeted",
+            "description": "Focused backend API regressions for learning notes, note discussion metadata, and attendance date parsing used by embedded attendance/calendar workflows.",
+            "working_directory": ".",
+            "coverage_tags": [
+                "learning-notes",
+                "attendance",
+                "backend-api"
+            ],
+            "commands": [
+                {
+                    "label": "pytest",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "pytest",
+                        "tests/backend/learning_notes/test_learning_notes_api.py",
+                        "-q"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/backend/learning_notes/test_learning_notes_api.py",
+                    "apps/backend/courseeval_backend/api/routers/learning_notes.py",
+                    "apps/backend/courseeval_backend/api/routers/attendance.py",
+                    "apps/backend/courseeval_backend/api/schemas.py",
+                    "apps/backend/courseeval_backend/api/schema_defs/attendance.py",
+                    "apps/backend/courseeval_backend/db/models.py",
+                    "tests/scenarios/llm_scenario.py"
+                ],
+                "globs": [
+                    "apps/backend/courseeval_backend/api/routers/learning_notes.py",
+                    "apps/backend/courseeval_backend/api/routers/attendance.py"
+                ]
+            },
+            "ledger_id": "backend.learning_notes.api",
+            "notes": "Pair with the targeted Playwright learning-notes/attendance tier when browser-visible behavior or routing is affected."
+        },
+        {
+            "id": "backend.manual_script_api_coverage",
+            "category": "backend-pytest",
+            "risk": "targeted",
+            "description": "Manual-script replacement smoke coverage for admin API routes through in-process FastAPI TestClient.",
+            "working_directory": ".",
+            "coverage_tags": [
+                "manual-script-migration",
+                "admin-api",
+                "backend-pytest"
+            ],
+            "commands": [
+                {
+                    "label": "pytest",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "pytest",
+                        "tests/backend/manual/test_manual_script_api_coverage.py",
+                        "-q"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/backend/manual/test_manual_script_api_coverage.py",
+                    "apps/backend/courseeval_backend/api/routers/classes.py",
+                    "apps/backend/courseeval_backend/api/routers/dashboard.py",
+                    "apps/backend/courseeval_backend/api/routers/logs.py",
+                    "apps/backend/courseeval_backend/api/routers/points.py",
+                    "apps/backend/courseeval_backend/api/routers/semesters.py",
+                    "apps/backend/courseeval_backend/api/routers/settings.py",
+                    "apps/backend/courseeval_backend/api/schema_defs/operations.py",
+                    "apps/backend/courseeval_backend/api/schema_defs/points.py",
+                    "apps/backend/courseeval_backend/api/routers/users.py",
+                    "apps/backend/courseeval_backend/domains/courses/class_scope.py"
+                ],
+                "globs": []
+            },
+            "ledger_id": null,
+            "notes": "This target keeps former localhost manual smoke scripts represented in the validation selector. It is not a replacement for route-specific behavior/security tests."
+        },
+        {
+            "id": "frontend.school.build",
+            "category": "frontend-build",
+            "risk": "targeted",
+            "description": "School SPA production build. Catches Vue/Vite import, syntax, bundling, and asset pipeline regressions before browser E2E is interpreted.",
+            "working_directory": "apps/web/school",
+            "required_capabilities": [],
+            "coverage_tags": [
+                "admin-frontend",
+                "build",
+                "vite"
+            ],
+            "commands": [
+                {
+                    "label": "build",
+                    "argv": [
+                        "npm",
+                        "run",
+                        "build"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "apps/web/school/package.json",
+                    "apps/web/school/package-lock.json",
+                    "apps/web/school/vite.config.js",
+                    "apps/web/school/playwright.config.cjs",
+                    "apps/web/school/src/"
+                ],
+                "globs": [
+                    "apps/web/school/src/**",
+                    "apps/web/school/*.config.js",
+                    "apps/web/school/*.config.cjs"
+                ]
+            },
+            "ledger_id": "frontend.school.build",
+            "notes": "Recommended for school frontend source/config changes. A Playwright spec-only change does not necessarily require rebuild unless shared helpers or config changed."
+        },
+        {
+            "id": "frontend.school.markdown_latex_clipboard",
+            "category": "frontend-node-test",
+            "risk": "targeted",
+            "description": "Node test coverage for admin Markdown/LaTeX preprocessing, clipboard fallback behavior, and Playwright preflight JSON diagnostics.",
+            "working_directory": ".",
+            "coverage_tags": [
+                "admin-frontend",
+                "markdown",
+                "latex",
+                "clipboard",
+                "playwright-preflight"
+            ],
+            "commands": [
+                {
+                    "label": "node test",
+                    "argv": [
+                        "node",
+                        "--test",
+                        "tests/frontend/school/markdown_latex_and_clipboard.test.mjs"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/frontend/school/markdown_latex_and_clipboard.test.mjs",
+                    "apps/web/school/src/utils/markdownIt.js",
+                    "apps/web/school/src/utils/clipboard.js",
+                    "apps/web/school/src/components/MarkdownLatexLiveDemo.vue",
+                    "ops/scripts/dev/playwright_preflight.py"
+                ],
+                "globs": [
+                    "tests/frontend/school/**",
+                    "apps/web/school/src/utils/markdown*.js",
+                    "apps/web/school/src/utils/clipboard.js"
+                ]
+            },
+            "ledger_id": null,
+            "notes": "This target is intentionally cheaper than Playwright and should run before browser E2E for Markdown/LaTeX or copy-button changes."
+        },
+        {
+            "id": "school.e2e.learning_notes_attendance_cover_tier20",
+            "category": "school-playwright",
+            "risk": "targeted",
+            "description": "Targeted school Playwright tier for learning-note, course-cover, teaching-calendar redirect, and attendance/calendar surfaces.",
+            "working_directory": "apps/web/school",
+            "requires_review_reason": "Playwright targets depend on local browser, managed backend/frontend ports, seed/reset helpers, and should be run serially on default ports.",
+            "coverage_tags": [
+                "school-playwright",
+                "learning-notes",
+                "attendance",
+                "course-cover"
+            ],
+            "commands": [
+                {
+                    "label": "playwright targeted",
+                    "argv": [
+                        "node",
+                        "scripts/playwright-external-runner.cjs",
+                        "e2e-learning-notes-attendance-cover-tier20.spec.js",
+                        "--project=chromium"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/e2e/web-school/e2e-learning-notes-attendance-cover-tier20.spec.js",
+                    "apps/web/school/src/views/LearningNotes.vue",
+                    "apps/web/school/src/views/Attendance.vue",
+                    "apps/web/school/src/views/MyCourses.vue",
+                    "apps/web/school/src/views/StudentCourseHome.vue",
+                    "apps/web/school/src/router/index.js",
+                    "apps/backend/courseeval_backend/api/routers/learning_notes.py",
+                    "apps/backend/courseeval_backend/api/routers/attendance.py"
+                ],
+                "globs": [
+                    "apps/web/school/src/**/LearningNotes*.vue",
+                    "apps/web/school/src/**/Attendance*.vue"
+                ]
+            },
+            "ledger_id": "school.e2e.learning_notes_attendance_cover_tier20",
+            "notes": "Does not replace full Playwright when shared E2E harness, auth, global setup, or broad routing changes."
+        },
+        {
+            "id": "backend.llm.attachment_formats",
+            "category": "backend-pytest",
+            "risk": "targeted",
+            "description": "Focused backend attachment extraction and classification tests for text, Office, zip, and RAR handling.",
+            "working_directory": ".",
+            "required_capabilities": [
+                "rar-extraction"
+            ],
+            "coverage_tags": [
+                "llm",
+                "attachments",
+                "backend-pytest"
+            ],
+            "commands": [
+                {
+                    "label": "pytest",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "pytest",
+                        "tests/backend/llm/test_llm_attachment_formats.py",
+                        "-q"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/backend/llm/test_llm_attachment_formats.py",
+                    "tests/fixtures/llm_rar/",
+                    "tests/backend/files/",
+                    "apps/backend/courseeval_backend/attachments.py",
+                    "apps/backend/courseeval_backend/domains/llm/attachments.py",
+                    "apps/backend/courseeval_backend/attachment_compliance.py",
+                    "apps/backend/courseeval_backend/llm_grading.py"
+                ],
+                "globs": [
+                    "tests/fixtures/llm_rar/**",
+                    "tests/backend/files/**",
+                    "apps/backend/courseeval_backend/domains/llm/**"
+                ]
+            },
+            "ledger_id": "backend.llm.attachment_formats",
+            "notes": "If broader LLM grading, quota, or worker behavior changes, add LLM/homework behavior tests beyond this attachment-format target."
+        },
+        {
+            "id": "backend.files.attachment_api",
+            "category": "backend-pytest",
+            "risk": "targeted",
+            "description": "Focused backend file upload/download API regressions for attachment response shape, upload compliance, stored-name downloads, and course cover-image upload reuse.",
+            "working_directory": ".",
+            "coverage_tags": [
+                "files",
+                "attachments",
+                "uploads",
+                "backend-api"
+            ],
+            "commands": [
+                {
+                    "label": "pytest",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "pytest",
+                        "tests/backend/files",
+                        "-q"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/backend/files/",
+                    "apps/backend/courseeval_backend/api/routers/files.py",
+                    "apps/backend/courseeval_backend/api/routers/subjects.py",
+                    "apps/backend/courseeval_backend/api/schema_defs/files.py",
+                    "apps/backend/courseeval_backend/attachments.py",
+                    "apps/backend/courseeval_backend/attachment_compliance.py"
+                ],
+                "globs": [
+                    "tests/backend/files/**"
+                ]
+            },
+            "ledger_id": "backend.files.attachment_api",
+            "notes": "Use for bounded file schema/router changes. This target does not replace LLM attachment-format parsing tests when grading extraction behavior changes."
+        },
+        {
+            "id": "backend.roster.student_user_api_sync",
+            "category": "backend-pytest",
+            "risk": "targeted",
+            "description": "Focused roster/user API target for admin-created student users, canonical Student binding, temporary-class backfill for missing class assignment, and user-to-roster synchronization.",
+            "working_directory": ".",
+            "coverage_tags": [
+                "roster",
+                "student-identity",
+                "users-api",
+                "backend-pytest"
+            ],
+            "commands": [
+                {
+                    "label": "pytest",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "pytest",
+                        "tests/backend/roster/test_student_user_api_roster_sync.py",
+                        "-q"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/backend/roster/test_student_user_api_roster_sync.py",
+                    "tests/backend/roster/test_admin_student_roster_from_users.py",
+                    "tests/backend/roster/test_student_identity_guardrails.py",
+                    "apps/backend/courseeval_backend/api/routers/users.py",
+                    "apps/backend/courseeval_backend/api/routers/students.py",
+                    "apps/backend/courseeval_backend/api/schemas.py",
+                    "apps/backend/courseeval_backend/api/schema_defs/",
+                    "apps/backend/courseeval_backend/api/schema_defs/roster.py",
+                    "apps/backend/courseeval_backend/domains/roster/reconciliation.py",
+                    "apps/backend/courseeval_backend/domains/roster/sync.py",
+                    "apps/backend/courseeval_backend/domains/roster/identity.py"
+                ],
+                "globs": [
+                    "apps/backend/courseeval_backend/domains/roster/**",
+                    "tests/backend/roster/test_student_user_api_roster_sync.py",
+                    "tests/backend/roster/test_admin_student_roster_from_users.py",
+                    "tests/backend/roster/test_student_identity_guardrails.py"
+                ]
+            },
+            "ledger_id": "backend.roster.student_user_api_sync",
+            "notes": "Use when student accounts are created or edited through /api/users and must remain bound to canonical Student rows."
+        },
+        {
+            "id": "backend.roster.student_identity_audit",
+            "category": "backend-pytest",
+            "risk": "targeted",
+            "description": "Focused roster audit target for canonical Student identity and users.student_id migration prechecks.",
+            "working_directory": ".",
+            "coverage_tags": [
+                "roster",
+                "student-identity",
+                "migration-precheck",
+                "backend-pytest"
+            ],
+            "commands": [
+                {
+                    "label": "pytest",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "pytest",
+                        "tests/backend/roster/test_student_identity_audit.py",
+                        "-q"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/backend/roster/test_student_identity_audit.py",
+                    "tests/backend/roster/test_student_identity_guardrails.py",
+                    "apps/backend/courseeval_backend/domains/roster/audit.py",
+                    "apps/backend/courseeval_backend/domains/roster/identity.py",
+                    "ops/scripts/dev/audit_student_identity.py",
+                    "apps/backend/courseeval_backend/db/models.py"
+                ],
+                "globs": [
+                    "apps/backend/courseeval_backend/domains/roster/**",
+                    "tests/backend/roster/**"
+                ]
+            },
+            "ledger_id": "backend.roster.student_identity_audit",
+            "notes": "Use before any student identity data migration or automatic repair. This target reports conflicts; it does not mutate data."
+        },
+        {
+            "id": "backend.roster.student_identity_repair",
+            "category": "backend-pytest",
+            "risk": "targeted",
+            "description": "Focused roster repair target for default/new-system student account data migration into canonical Student plus users.student_id bindings.",
+            "working_directory": ".",
+            "coverage_tags": [
+                "roster",
+                "student-identity",
+                "default-data-repair",
+                "backend-pytest"
+            ],
+            "commands": [
+                {
+                    "label": "pytest",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "pytest",
+                        "tests/backend/roster/test_student_identity_repair.py",
+                        "-q"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/backend/roster/test_student_identity_repair.py",
+                    "apps/backend/courseeval_backend/domains/roster/repair.py",
+                    "apps/backend/courseeval_backend/domains/roster/audit.py",
+                    "apps/backend/courseeval_backend/domains/roster/identity.py",
+                    "apps/backend/courseeval_backend/domains/roster/sync.py",
+                    "apps/backend/courseeval_backend/domains/roster/reconciliation.py",
+                    "ops/scripts/dev/repair_student_identity.py",
+                    "apps/backend/courseeval_backend/domains/seed/demo.py",
+                    "apps/backend/courseeval_backend/bootstrap.py"
+                ],
+                "globs": [
+                    "apps/backend/courseeval_backend/domains/roster/**",
+                    "tests/backend/roster/test_student_identity_repair.py"
+                ]
+            },
+            "ledger_id": "backend.roster.student_identity_repair",
+            "notes": "Use after the audit target when the change can mutate Student/User identity data. The repair path is scoped to new-system/default data, not broad historical migrations."
+        },
+        {
+            "id": "backend.courses.student_course_roster_behavior",
+            "category": "backend-pytest",
+            "risk": "targeted",
+            "description": "Focused course/roster regression target for student account to roster synchronization, required-course enrollment sync, homework submission access, and class/course invariants.",
+            "working_directory": ".",
+            "coverage_tags": [
+                "course-access",
+                "roster",
+                "homework",
+                "backend-pytest"
+            ],
+            "commands": [
+                {
+                    "label": "pytest",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "pytest",
+                        "tests/backend/courses/test_student_course_roster_behavior.py",
+                        "-q"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/backend/courses/test_student_course_roster_behavior.py",
+                    "apps/backend/courseeval_backend/domains/courses/access.py",
+                    "apps/backend/courseeval_backend/domains/roster/reconciliation.py",
+                    "apps/backend/courseeval_backend/api/routers/auth.py",
+                    "apps/backend/courseeval_backend/api/routers/homework.py",
+                    "apps/backend/courseeval_backend/api/routers/subjects.py"
+                ],
+                "globs": [
+                    "apps/backend/courseeval_backend/domains/courses/**",
+                    "apps/backend/courseeval_backend/domains/roster/**",
+                    "tests/backend/courses/**",
+                    "tests/backend/roster/**"
+                ]
+            },
+            "ledger_id": "backend.courses.student_course_roster_behavior",
+            "notes": "Course access and roster changes often have broad effects. Consider behavior/security tests and PostgreSQL full validation for larger changes."
+        },
+        {
+            "id": "backend.scores.dashboard_course_scope",
+            "category": "backend-pytest",
+            "risk": "targeted",
+            "description": "Focused score/dashboard API target for subject-scoped teacher visibility, score composition, grade appeals, and course-owned dashboard stats/rankings.",
+            "working_directory": ".",
+            "coverage_tags": [
+                "scores",
+                "dashboard",
+                "course-access",
+                "backend-pytest"
+            ],
+            "commands": [
+                {
+                    "label": "pytest",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "pytest",
+                        "tests/backend/integration/test_core_api_surface.py",
+                        "tests/backend/scores/test_score_composition.py",
+                        "-q"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/backend/integration/test_core_api_surface.py",
+                    "tests/backend/scores/test_score_composition.py",
+                    "apps/backend/courseeval_backend/api/routers/dashboard.py",
+                    "apps/backend/courseeval_backend/api/schema_defs/dashboard.py",
+                    "apps/backend/courseeval_backend/api/routers/scores.py",
+                    "apps/backend/courseeval_backend/domains/scores/composition.py",
+                    "apps/backend/courseeval_backend/domains/scores/appeals.py",
+                    "apps/backend/courseeval_backend/domains/courses/access.py"
+                ],
+                "globs": [
+                    "tests/backend/scores/**",
+                    "apps/backend/courseeval_backend/domains/scores/**"
+                ]
+            },
+            "ledger_id": "backend.scores.dashboard_course_scope",
+            "notes": "Use this before full PostgreSQL fallback for bounded score/dashboard route changes. Escalate to security or full PostgreSQL validation for shared course-access helper, schema, or auth changes."
+        },
+        {
+            "id": "backend.homework.llm_grading",
+            "category": "backend-pytest",
+            "risk": "targeted",
+            "description": "Focused homework LLM grading pytest target for grading lifecycle, effective score behavior, retries, queue state, and submission serialization.",
+            "working_directory": ".",
+            "coverage_tags": [
+                "homework",
+                "llm",
+                "backend-pytest"
+            ],
+            "commands": [
+                {
+                    "label": "pytest",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "pytest",
+                        "tests/backend/homework/test_homework_llm_grading.py",
+                        "-q"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/backend/homework/test_homework_llm_grading.py",
+                    "apps/backend/courseeval_backend/api/routers/homework.py",
+                    "apps/backend/courseeval_backend/llm_grading.py",
+                    "apps/backend/courseeval_backend/domains/llm/grading_prompt.py",
+                    "apps/backend/courseeval_backend/domains/llm/grading_result.py",
+                    "apps/backend/courseeval_backend/api/routers/e2e_dev.py",
+                    "apps/backend/courseeval_backend/api/schemas.py",
+                    "apps/backend/courseeval_backend/api/schema_defs/",
+                    "apps/backend/courseeval_backend/db/models.py"
+                ],
+                "globs": [
+                    "tests/backend/homework/**",
+                    "apps/backend/courseeval_backend/domains/homework/**"
+                ]
+            },
+            "ledger_id": null,
+            "notes": "Pair with behavior and Playwright homework targets when browser-visible submission, review, or LLM routing behavior changes."
+        },
+        {
+            "id": "behavior.notifications.sync_api_edge",
+            "category": "behavior-pytest",
+            "risk": "targeted",
+            "description": "Behavior pytest target for notification list/sync-status alignment, concurrent read-state updates, subject-scoped authorization edges, and target-scope regressions.",
+            "working_directory": ".",
+            "coverage_tags": [
+                "notifications",
+                "course-access",
+                "behavior-pytest"
+            ],
+            "commands": [
+                {
+                    "label": "pytest",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "pytest",
+                        "tests/behavior/test_notification_sync_api_edge_behavior.py",
+                        "-q"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/behavior/test_notification_sync_api_edge_behavior.py",
+                    "apps/backend/courseeval_backend/api/routers/notifications.py",
+                    "apps/backend/courseeval_backend/domains/homework/appeals.py",
+                    "apps/backend/courseeval_backend/domains/homework/notifications.py",
+                    "apps/backend/courseeval_backend/domains/scores/appeals.py",
+                    "apps/backend/courseeval_backend/domains/courses/access.py",
+                    "apps/backend/courseeval_backend/api/schemas.py",
+                    "apps/backend/courseeval_backend/api/schema_defs/",
+                    "apps/backend/courseeval_backend/api/schema_defs/notifications.py",
+                    "apps/web/school/src/views/Layout.vue",
+                    "apps/web/school/src/views/Notifications.vue"
+                ],
+                "globs": []
+            },
+            "ledger_id": "behavior.notifications.sync_api_edge",
+            "notes": "Use before or alongside notification header Playwright tiers when the invariant is mostly API/read-state behavior."
+        },
+        {
+            "id": "behavior.homework_lifecycle_llm",
+            "category": "behavior-pytest",
+            "risk": "targeted",
+            "description": "Cross-feature behavior pytest target for homework lifecycle, LLM grading, score visibility, quota, and multi-actor transitions.",
+            "working_directory": ".",
+            "coverage_tags": [
+                "homework",
+                "llm",
+                "behavior-pytest"
+            ],
+            "commands": [
+                {
+                    "label": "pytest",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "pytest",
+                        "tests/behavior/test_homework_lifecycle_llm_behavior.py",
+                        "-q"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/behavior/test_homework_lifecycle_llm_behavior.py",
+                    "apps/backend/courseeval_backend/api/routers/homework.py",
+                    "apps/backend/courseeval_backend/llm_grading.py",
+                    "apps/backend/courseeval_backend/domains/llm/quota.py",
+                    "apps/backend/courseeval_backend/api/routers/llm_settings.py"
+                ],
+                "globs": [
+                    "apps/backend/courseeval_backend/domains/homework/**",
+                    "apps/backend/courseeval_backend/domains/llm/**"
+                ]
+            },
+            "ledger_id": null,
+            "notes": "Recommended for cross-module homework/LLM changes that exceed a single focused backend file."
+        },
+        {
+            "id": "behavior.course_roster_homework_edge",
+            "category": "behavior-pytest",
+            "risk": "targeted",
+            "description": "Behavior pytest target for course, roster, homework, score appeal, and enrollment edge interactions.",
+            "working_directory": ".",
+            "coverage_tags": [
+                "course-access",
+                "roster",
+                "homework",
+                "behavior-pytest"
+            ],
+            "commands": [
+                {
+                    "label": "pytest",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "pytest",
+                        "tests/behavior/test_course_roster_homework_edge_behavior.py",
+                        "-q"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/behavior/test_course_roster_homework_edge_behavior.py",
+                    "apps/backend/courseeval_backend/domains/courses/access.py",
+                    "apps/backend/courseeval_backend/domains/roster/reconciliation.py",
+                    "apps/backend/courseeval_backend/api/routers/homework.py",
+                    "apps/backend/courseeval_backend/api/routers/subjects.py",
+                    "apps/backend/courseeval_backend/api/routers/students.py"
+                ],
+                "globs": [
+                    "apps/backend/courseeval_backend/domains/courses/**",
+                    "apps/backend/courseeval_backend/domains/roster/**"
+                ]
+            },
+            "ledger_id": "behavior.course_roster_homework_edge",
+            "notes": "Escalate to PostgreSQL full consideration when schema or broad course access helpers change."
+        },
+        {
+            "id": "backend.e2e_dev.demo_course_seed",
+            "category": "backend-pytest",
+            "risk": "targeted",
+            "description": "Focused backend coverage for default demo course seed data used by local installs and E2E reset helpers.",
+            "working_directory": ".",
+            "coverage_tags": [
+                "e2e-dev",
+                "demo-seed",
+                "default-data",
+                "backend-pytest"
+            ],
+            "commands": [
+                {
+                    "label": "pytest",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "pytest",
+                        "tests/backend/e2e_dev/test_demo_course_seed.py",
+                        "-q"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/backend/e2e_dev/test_demo_course_seed.py",
+                    "apps/backend/courseeval_backend/domains/seed/demo.py",
+                    "apps/backend/courseeval_backend/domains/seed/demo_courses.py",
+                    "apps/backend/courseeval_backend/domains/seed/demo_users.py"
+                ],
+                "globs": []
+            },
+            "ledger_id": "backend.e2e_dev.demo_course_seed",
+            "notes": "Use for default/demo seed data, seeded credentials, seeded courses, prefilled submissions, and demo roster construction. E2E dev route gate changes should also run backend.e2e_dev.api_hazard_tier."
+        },
+        {
+            "id": "backend.e2e_dev.api_hazard_tier",
+            "category": "backend-pytest",
+            "risk": "targeted",
+            "description": "Fast TestClient hazard tier for /api/e2e/dev seed gates, mock LLM helpers, grading pump, and cross-role E2E-dev API edges.",
+            "working_directory": ".",
+            "coverage_tags": [
+                "e2e-dev",
+                "seed-reset",
+                "llm",
+                "backend-pytest"
+            ],
+            "commands": [
+                {
+                    "label": "pytest",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "pytest",
+                        "tests/backend/e2e_dev/test_e2e_dev_api_hazard_tier.py",
+                        "-q"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/backend/e2e_dev/test_e2e_dev_api_hazard_tier.py",
+                    "apps/backend/courseeval_backend/api/routers/e2e_dev.py",
+                    "apps/backend/courseeval_backend/api/routers/discussions.py",
+                    "apps/backend/courseeval_backend/api/routers/homework.py",
+                    "apps/backend/courseeval_backend/api/routers/materials.py",
+                    "apps/backend/courseeval_backend/api/routers/students.py",
+                    "apps/backend/courseeval_backend/api/routers/notifications.py",
+                    "apps/backend/courseeval_backend/api/routers/llm_settings.py",
+                    "apps/backend/courseeval_backend/main.py",
+                    "apps/backend/courseeval_backend/core/config.py",
+                    "tests/e2e/web-school/e2e-seed-headers.cjs",
+                    "tests/e2e/web-school/fixtures.cjs",
+                    "tests/e2e/web-school/global-setup.cjs"
+                ],
+                "globs": [
+                    "tests/backend/e2e_dev/**"
+                ]
+            },
+            "ledger_id": null,
+            "notes": "This pytest target is usually cheaper and less fragile than Playwright when validating E2E dev API gates."
+        },
+        {
+            "id": "security.api_regression",
+            "category": "security-pytest",
+            "risk": "broad",
+            "description": "Security regression pytest suite for unauthenticated access, role boundaries, admin-only routes, IDOR edges, invalid tokens, and abuse cases.",
+            "working_directory": ".",
+            "requires_review_reason": "Security runs are broad API guardrails; failures should be triaged before accepting targeted-only evidence.",
+            "risk_escalation": "Strongly recommended for auth, permission helper, course access, homework ACL, LLM admin route, or parent-code changes.",
+            "coverage_tags": [
+                "security",
+                "auth",
+                "course-access",
+                "homework",
+                "llm"
+            ],
+            "commands": [
+                {
+                    "label": "pytest",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "pytest",
+                        "tests/security",
+                        "-q"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/security/test_security_regression.py",
+                    "tests/security/test_security_hardening_followup.py",
+                    "apps/backend/courseeval_backend/core/auth.py",
+                    "apps/backend/courseeval_backend/core/config.py",
+                    "apps/backend/courseeval_backend/api/routers/classes.py",
+                    "apps/backend/courseeval_backend/domains/courses/access.py",
+                    "apps/backend/courseeval_backend/api/routers/auth.py",
+                    "apps/backend/courseeval_backend/api/routers/e2e_dev.py",
+                    "apps/backend/courseeval_backend/api/routers/files.py",
+                    "apps/backend/courseeval_backend/attachments.py",
+                    "apps/backend/courseeval_backend/attachment_compliance.py",
+                    "apps/backend/courseeval_backend/api/routers/attendance.py",
+                    "apps/backend/courseeval_backend/api/routers/users.py",
+                    "apps/backend/courseeval_backend/api/routers/homework.py",
+                    "apps/backend/courseeval_backend/api/routers/llm_settings.py",
+                    "apps/backend/courseeval_backend/api/routers/notifications.py"
+                ],
+                "globs": [
+                    "tests/security/**"
+                ]
+            },
+            "ledger_id": "security.api_regression",
+            "notes": "Does not replace full PostgreSQL validation for schema-sensitive authorization behavior."
+        },
+        {
+            "id": "school.e2e.redteam_auth_notification_samples",
+            "category": "school-playwright",
+            "risk": "targeted",
+            "description": "Self-organized WAI-VALID target for one-file E2E red-team samples covering auth rollback, same-context login races, selected_course cache poisoning, and parallel login isolation.",
+            "working_directory": ".",
+            "requires_review_reason": "Runs Playwright shards through the foreground WAI-VALID supervisor so each spec gets isolated API/UI ports and SQLite state; keep concurrency at 10 unless resource pressure is observed.",
+            "coverage_tags": [
+                "school-playwright",
+                "red-team",
+                "auth",
+                "notifications",
+                "concurrency"
+            ],
+            "commands": [
+                {
+                    "label": "wai-valid red-team samples",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "ops/scripts/dev/wai_valid_supervisor.py",
+                        "--run-id",
+                        "e2e-redteam-auth-notification-samples",
+                        "--replace-run-dir",
+                        "--block",
+                        "self-organized-e2e-redteam",
+                        "--concurrency",
+                        "10",
+                        "--regression-mode",
+                        "light",
+                        "--playwright-shard-timeout-seconds",
+                        "1200",
+                        "--sample",
+                        "tests/e2e/web-school/e2e-redteam-auth-login-me-failure-rollback.spec.js",
+                        "--sample",
+                        "tests/e2e/web-school/e2e-redteam-notification-same-context-tabs.spec.js",
+                        "--sample",
+                        "tests/e2e/web-school/e2e-redteam-selected-course-cache-poison-badge.spec.js",
+                        "--sample",
+                        "tests/e2e/web-school/e2e-redteam-parallel-login-context-isolation.spec.js"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/e2e/web-school/e2e-redteam-auth-login-me-failure-rollback.spec.js",
+                    "tests/e2e/web-school/e2e-redteam-notification-same-context-tabs.spec.js",
+                    "tests/e2e/web-school/e2e-redteam-selected-course-cache-poison-badge.spec.js",
+                    "tests/e2e/web-school/e2e-redteam-parallel-login-context-isolation.spec.js",
+                    "apps/web/school/src/api/index.js",
+                    "apps/web/school/src/stores/user.js",
+                    "apps/web/school/src/views/Login.vue",
+                    "apps/web/school/src/views/Layout.vue",
+                    "apps/web/school/src/views/Notifications.vue",
+                    "tests/e2e/web-school/fixtures.cjs",
+                    "tests/e2e/web-school/future-advanced-coverage-helpers.cjs",
+                    "ops/scripts/dev/wai_valid_supervisor.py"
+                ],
+                "globs": []
+            },
+            "ledger_id": "school.e2e.redteam_auth_notification_samples",
+            "notes": "This target keeps red-team attacks as one spec file per sample while using WAI-VALID concurrent scheduling. Use it for auth/localStorage/session races and notification badge cache-poisoning changes."
+        },
+        {
+            "id": "school.e2e.security_hardening_followup",
+            "category": "school-playwright",
+            "risk": "targeted",
+            "description": "Small browser-backed security hardening slice for localStorage role tampering, direct student API mutation attempts, and E2E dev seed-token-only rejection on powerful endpoints.",
+            "working_directory": "apps/web/school",
+            "requires_review_reason": "Playwright targets depend on local browser, managed backend/frontend ports, seed/reset helpers, and should be run serially on default ports.",
+            "coverage_tags": [
+                "school-playwright",
+                "security",
+                "auth",
+                "e2e-dev"
+            ],
+            "commands": [
+                {
+                    "label": "playwright targeted",
+                    "argv": [
+                        "node",
+                        "scripts/playwright-external-runner.cjs",
+                        "e2e-security-hardening-followup.spec.js",
+                        "--project=chromium"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/e2e/web-school/e2e-security-hardening-followup.spec.js",
+                    "tests/e2e/web-school/e2e-seed-headers.cjs",
+                    "tests/e2e/web-school/fixtures.cjs",
+                    "tests/e2e/web-school/future-advanced-coverage-helpers.cjs",
+                    "apps/web/school/src/views/Login.vue",
+                    "apps/web/school/src/router/index.js",
+                    "apps/backend/courseeval_backend/api/routers/auth.py",
+                    "apps/backend/courseeval_backend/api/routers/users.py",
+                    "apps/backend/courseeval_backend/api/routers/subjects.py",
+                    "apps/backend/courseeval_backend/attachments.py",
+                    "apps/backend/courseeval_backend/api/routers/e2e_dev.py",
+                    "apps/backend/courseeval_backend/core/auth.py",
+                    "apps/backend/courseeval_backend/core/config.py"
+                ],
+                "globs": []
+            },
+            "ledger_id": "school.e2e.security_hardening_followup",
+            "notes": "Keep this spec small; broader API security coverage belongs in security.api_regression."
+        },
+        {
+            "id": "school.e2e.parent_portal_hardening",
+            "category": "school-playwright",
+            "risk": "targeted",
+            "description": "Browser-backed parent portal hardening suite for parent-code login binding, same-class elective homework/notification leakage, and parent Vite runner startup.",
+            "working_directory": "apps/web/school",
+            "requires_review_reason": "Playwright targets depend on local browser, managed backend/frontend ports, seed/reset helpers, and should be run serially on default ports. This target also starts the parent portal Vite app.",
+            "coverage_tags": [
+                "school-playwright",
+                "parent-portal",
+                "security",
+                "course-access"
+            ],
+            "commands": [
+                {
+                    "label": "playwright targeted",
+                    "argv": [
+                        "node",
+                        "scripts/playwright-external-runner.cjs",
+                        "e2e-parent-portal-hardening.spec.js",
+                        "--project=chromium"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/e2e/web-school/e2e-parent-portal-hardening.spec.js",
+                    "tests/e2e/web-school/fixtures.cjs",
+                    "tests/e2e/web-school/future-advanced-coverage-helpers.cjs",
+                    "apps/web/school/scripts/playwright-external-runner.cjs",
+                    "apps/web/parent/src/api/index.js",
+                    "apps/web/parent/src/router/index.js",
+                    "apps/web/parent/src/views/Login.vue",
+                    "apps/web/parent/src/views/Home.vue",
+                    "apps/web/parent/src/views/Homework.vue",
+                    "apps/web/parent/src/views/Notifications.vue",
+                    "apps/backend/courseeval_backend/api/routers/parent.py",
+                    "apps/backend/courseeval_backend/api/routers/e2e_dev.py"
+                ],
+                "globs": [
+                    "apps/web/parent/src/**"
+                ]
+            },
+            "ledger_id": "school.e2e.parent_portal_hardening",
+            "notes": "Use for parent SPA validation. The spec runs from the school Playwright package but uses PLAYWRIGHT_PARENT_BASE_URL for the parent app."
+        },
+        {
+            "id": "school.e2e.discussion_cover_llm_tier3",
+            "category": "school-playwright",
+            "risk": "targeted",
+            "description": "Targeted school Playwright suite for discussion LLM assistant, long reply preview expansion, and course cover API/UI flows.",
+            "working_directory": "apps/web/school",
+            "requires_review_reason": "Playwright targets depend on local browser, managed backend/frontend ports, seed/reset helpers, and should be run serially on default ports.",
+            "coverage_tags": [
+                "school-playwright",
+                "discussions",
+                "llm",
+                "course-cover"
+            ],
+            "commands": [
+                {
+                    "label": "playwright targeted",
+                    "argv": [
+                        "node",
+                        "scripts/playwright-external-runner.cjs",
+                        "e2e-discussion-cover-llm-tier3.spec.js",
+                        "--project=chromium"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/e2e/web-school/e2e-discussion-cover-llm-tier3.spec.js",
+                    "apps/web/school/src/components/CourseDiscussionPanel.vue",
+                    "apps/web/school/src/views/MyCourses.vue",
+                    "apps/backend/courseeval_backend/api/routers/discussions.py",
+                    "apps/backend/courseeval_backend/llm_discussion.py",
+                    "apps/backend/courseeval_backend/api/routers/subjects.py"
+                ],
+                "globs": [
+                    "apps/web/school/src/**/Discussion*.vue"
+                ]
+            },
+            "ledger_id": "school.e2e.discussion_cover_llm_tier3",
+            "notes": "Escalate when shared E2E fixtures, route guards, or LLM seed helpers change."
+        },
+        {
+            "id": "school.e2e.homework_comment_cover_tier4",
+            "category": "school-playwright",
+            "risk": "targeted",
+            "description": "Targeted school Playwright suite for homework submission previews, long comments, LLM regrade/recovery, multi-role API guards, and course cover flows.",
+            "working_directory": "apps/web/school",
+            "requires_review_reason": "Playwright targets depend on local browser, managed backend/frontend ports, seed/reset helpers, and should be run serially on default ports.",
+            "coverage_tags": [
+                "school-playwright",
+                "homework",
+                "llm",
+                "course-cover"
+            ],
+            "commands": [
+                {
+                    "label": "playwright targeted",
+                    "argv": [
+                        "node",
+                        "scripts/playwright-external-runner.cjs",
+                        "e2e-homework-comment-cover-tier4.spec.js",
+                        "--project=chromium"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/e2e/web-school/e2e-homework-comment-cover-tier4.spec.js",
+                    "apps/web/school/src/views/Homework.vue",
+                    "apps/web/school/src/views/HomeworkSubmissions.vue",
+                    "apps/web/school/src/views/HomeworkSubmissionReview.vue",
+                    "apps/web/school/src/views/HomeworkSubmission.vue",
+                    "apps/backend/courseeval_backend/api/routers/homework.py",
+                    "apps/backend/courseeval_backend/llm_grading.py"
+                ],
+                "globs": [
+                    "apps/web/school/src/**/Homework*.vue"
+                ]
+            },
+            "ledger_id": null,
+            "notes": "Pair with backend homework/LLM pytest for API-heavy changes."
+        },
+        {
+            "id": "school.e2e.homework_appeal_stale_tabs",
+            "category": "school-playwright",
+            "risk": "targeted",
+            "description": "Targeted school Playwright suite for teacher stale-tab homework-appeal convergence, terminal-state conflict recovery, review/appeal interleave, and reload-safe non-actionable detail state.",
+            "working_directory": "apps/web/school",
+            "requires_review_reason": "Playwright targets depend on local browser, managed backend/frontend ports, seed/reset helpers, and should be run serially on default ports.",
+            "coverage_tags": [
+                "school-playwright",
+                "homework",
+                "appeals",
+                "concurrency",
+                "teacher-ui"
+            ],
+            "commands": [
+                {
+                    "label": "playwright targeted",
+                    "argv": [
+                        "node",
+                        "scripts/playwright-external-runner.cjs",
+                        "e2e-homework-appeal-stale-tabs.spec.js",
+                        "--project=chromium"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/e2e/web-school/e2e-homework-appeal-stale-tabs.spec.js",
+                    "tests/e2e/web-school/fixtures.cjs",
+                    "tests/e2e/web-school/future-advanced-coverage-helpers.cjs",
+                    "apps/web/school/src/views/HomeworkSubmissionReview.vue",
+                    "apps/web/school/src/views/HomeworkSubmissions.vue",
+                    "apps/backend/courseeval_backend/api/routers/homework.py",
+                    "apps/backend/courseeval_backend/domains/appeal_notifications.py"
+                ],
+                "globs": [
+                    "apps/web/school/src/**/Homework*.vue"
+                ]
+            },
+            "ledger_id": "school.e2e.homework_appeal_stale_tabs",
+            "notes": "Use when homework appeal terminal-state recovery, stale teacher tabs, or detail-page appeal actions change. Pair with backend homework appeal pytest for API-only invariants."
+        },
+        {
+            "id": "school.e2e.core_flows_smoke",
+            "category": "school-playwright",
+            "risk": "targeted",
+            "description": "School Playwright smoke suite for login, seeded homework grid, teacher materials/notifications routes, and admin user grid.",
+            "working_directory": "apps/web/school",
+            "requires_review_reason": "Playwright targets depend on local browser, managed backend/frontend ports, seed/reset helpers, and should be run serially on default ports.",
+            "coverage_tags": [
+                "school-playwright",
+                "smoke",
+                "auth",
+                "routing"
+            ],
+            "commands": [
+                {
+                    "label": "playwright targeted",
+                    "argv": [
+                        "node",
+                        "scripts/playwright-external-runner.cjs",
+                        "e2e-core-flows-smoke.spec.js",
+                        "--project=chromium"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/e2e/web-school/e2e-core-flows-smoke.spec.js",
+                    "apps/web/school/src/views/Login.vue",
+                    "apps/web/school/src/views/Layout.vue",
+                    "apps/web/school/src/router/index.js",
+                    "apps/backend/courseeval_backend/api/routers/auth.py",
+                    "apps/backend/courseeval_backend/api/routers/e2e_dev.py"
+                ],
+                "globs": [
+                    "apps/web/school/src/api/**"
+                ]
+            },
+            "ledger_id": "school.e2e.core_flows_smoke",
+            "notes": "Useful as a low-cost browser smoke when broad UI routing or auth surface changes, but not a replacement for route-specific suites."
+        },
+        {
+            "id": "school.e2e.course_ui_markdown_reader",
+            "category": "school-playwright",
+            "risk": "targeted",
+            "description": "Targeted school Playwright suite for student course UI, markdown reader/demo, sidebar controls, materials layout, and teaching-calendar redirect behavior.",
+            "working_directory": "apps/web/school",
+            "requires_review_reason": "Playwright targets depend on local browser, managed backend/frontend ports, seed/reset helpers, and should be run serially on default ports.",
+            "coverage_tags": [
+                "school-playwright",
+                "materials",
+                "markdown",
+                "course-access",
+                "attendance"
+            ],
+            "commands": [
+                {
+                    "label": "playwright targeted",
+                    "argv": [
+                        "node",
+                        "scripts/playwright-external-runner.cjs",
+                        "e2e-course-ui-markdown-reader.spec.js",
+                        "--project=chromium"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/e2e/web-school/e2e-course-ui-markdown-reader.spec.js",
+                    "apps/web/school/src/views/MyCourses.vue",
+                    "apps/web/school/src/views/StudentCourseHome.vue",
+                    "apps/web/school/src/views/Materials.vue",
+                    "apps/web/school/src/views/MaterialRead.vue",
+                    "apps/web/school/src/components/MarkdownEditorPanel.vue",
+                    "apps/web/school/src/router/index.js"
+                ],
+                "globs": [
+                    "apps/web/school/src/**/Material*.vue",
+                    "apps/web/school/src/**/Markdown*.vue"
+                ]
+            },
+            "ledger_id": "school.e2e.course_ui_markdown_reader",
+            "notes": "Use for browser-visible course reader, materials, markdown, or course-entry UI changes."
+        },
+        {
+            "id": "school.e2e.docs_gap_tier15",
+            "category": "school-playwright",
+            "risk": "targeted",
+            "description": "API-heavy school Playwright tier for discussions validation, cross-class homework guards, LLM mock grading drain, and sync-status shape.",
+            "working_directory": "apps/web/school",
+            "requires_review_reason": "Playwright targets depend on local browser, managed backend/frontend ports, seed/reset helpers, and should be run serially on default ports.",
+            "coverage_tags": [
+                "school-playwright",
+                "discussions",
+                "homework",
+                "llm",
+                "notifications"
+            ],
+            "commands": [
+                {
+                    "label": "playwright targeted",
+                    "argv": [
+                        "node",
+                        "scripts/playwright-external-runner.cjs",
+                        "e2e-docs-gap-tier15.spec.js",
+                        "--project=chromium"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/e2e/web-school/e2e-docs-gap-tier15.spec.js"
+                ],
+                "globs": []
+            },
+            "ledger_id": null,
+            "notes": "Keep this for the spec itself or when validating the browser-managed end-to-end composition. Most pure HTTP invariants should prefer backend.e2e_dev.api_hazard_tier or behavior pytest targets first."
+        },
+        {
+            "id": "school.e2e.pitfall_guard_rails",
+            "category": "school-playwright",
+            "risk": "targeted",
+            "description": "Focused Playwright/API guard rails derived from documented pitfalls and known risk themes.",
+            "working_directory": "apps/web/school",
+            "requires_review_reason": "Playwright targets depend on local browser, managed backend/frontend ports, seed/reset helpers, and should be run serially on default ports.",
+            "coverage_tags": [
+                "school-playwright",
+                "pitfalls",
+                "guard-rails"
+            ],
+            "commands": [
+                {
+                    "label": "playwright targeted",
+                    "argv": [
+                        "node",
+                        "scripts/playwright-external-runner.cjs",
+                        "e2e-pitfall-guard-rails.spec.js",
+                        "--project=chromium"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/e2e/web-school/e2e-pitfall-guard-rails.spec.js"
+                ],
+                "globs": []
+            },
+            "ledger_id": null,
+            "notes": "Use for edits to the pitfall guard spec itself. Prefer narrower backend pytest targets for pure API behavior changes."
+        },
+        {
+            "id": "school.e2e.ui_responsive_layout",
+            "category": "school-playwright",
+            "risk": "targeted",
+            "description": "Responsive-layout Playwright guard rails for the school SPA mobile breakpoint and course-catalog containment.",
+            "working_directory": "apps/web/school",
+            "requires_review_reason": "Playwright targets depend on local browser, managed backend/frontend ports, seed/reset helpers, and should be run serially on default ports.",
+            "coverage_tags": [
+                "school-playwright",
+                "responsive-layout",
+                "ui"
+            ],
+            "commands": [
+                {
+                    "label": "playwright targeted",
+                    "argv": [
+                        "node",
+                        "scripts/playwright-external-runner.cjs",
+                        "ui-responsive-layout-regression.spec.js",
+                        "--project=chromium"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/e2e/web-school/ui-responsive-layout-regression.spec.js"
+                ],
+                "globs": []
+            },
+            "ledger_id": null,
+            "notes": "Use for edits to the responsive layout guard spec or layout changes that may affect mobile containment."
+        },
+        {
+            "id": "school.e2e.llm_hard_scenarios",
+            "category": "school-playwright",
+            "risk": "targeted",
+            "description": "Targeted school Playwright suite for hard LLM homework scenarios, preset routing, quota edges, and repaired regrade flows.",
+            "working_directory": "apps/web/school",
+            "requires_review_reason": "Playwright targets depend on local browser, managed backend/frontend ports, seed/reset helpers, and should be run serially on default ports.",
+            "coverage_tags": [
+                "school-playwright",
+                "homework",
+                "llm",
+                "routing"
+            ],
+            "commands": [
+                {
+                    "label": "playwright targeted",
+                    "argv": [
+                        "node",
+                        "scripts/playwright-external-runner.cjs",
+                        "e2e-llm-hard-scenarios.spec.js",
+                        "--project=chromium"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/e2e/web-school/e2e-llm-hard-scenarios.spec.js",
+                    "apps/web/school/src/views/Homework.vue",
+                    "apps/backend/courseeval_backend/api/routers/llm_settings.py",
+                    "apps/backend/courseeval_backend/llm_grading.py"
+                ],
+                "globs": []
+            },
+            "ledger_id": null,
+            "notes": "Use for browser-visible LLM routing and quota scenarios; pair with backend homework/LLM pytest for API-heavy implementation changes."
+        },
+        {
+            "id": "school.e2e.scenario_resilience",
+            "category": "school-playwright",
+            "risk": "broad",
+            "description": "Broad school Playwright resilience suite for stale state recovery, concurrent edits, enroll/drop idempotency, notifications, and appeal races.",
+            "working_directory": "apps/web/school",
+            "requires_review_reason": "High-cost browser tier with concurrency coverage; run when resilience selectors or the covered stale-state invariants change.",
+            "coverage_tags": [
+                "school-playwright",
+                "concurrency",
+                "homework",
+                "notifications",
+                "course-access"
+            ],
+            "commands": [
+                {
+                    "label": "playwright targeted",
+                    "argv": [
+                        "node",
+                        "scripts/playwright-external-runner.cjs",
+                        "e2e-scenario-resilience.spec.js",
+                        "--project=chromium"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/e2e/web-school/e2e-scenario-resilience.spec.js"
+                ],
+                "globs": []
+            },
+            "ledger_id": null,
+            "notes": "Do not use as a cheap default for unrelated changes. Prefer narrower backend behavior tests when a browser stale-state path is not involved."
+        },
+        {
+            "id": "school.e2e.future_advanced_coverage_part1",
+            "category": "school-playwright",
+            "risk": "broad",
+            "description": "Future advanced coverage Playwright scenarios 1-15 for stale tabs, concurrency, LLM failover, notifications, materials, attendance, and multi-actor races.",
+            "working_directory": "apps/web/school",
+            "requires_review_reason": "High-difficulty Playwright scenarios are costly and environment-sensitive; run when touched invariants justify browser race coverage.",
+            "coverage_tags": [
+                "school-playwright",
+                "concurrency",
+                "homework",
+                "llm",
+                "notifications",
+                "materials"
+            ],
+            "commands": [
+                {
+                    "label": "playwright targeted",
+                    "argv": [
+                        "node",
+                        "scripts/playwright-external-runner.cjs",
+                        "future-advanced-coverage.spec.js",
+                        "--project=chromium"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/e2e/web-school/future-advanced-coverage.spec.js",
+                    "tests/e2e/web-school/future-advanced-coverage-helpers.cjs"
+                ],
+                "globs": []
+            },
+            "ledger_id": null,
+            "notes": "Do not use as a cheap default. It is recommended mostly when the spec/helper itself changes or broad race-prone surfaces are under review."
+        },
+        {
+            "id": "school.e2e.future_advanced_coverage_part2",
+            "category": "school-playwright",
+            "risk": "broad",
+            "description": "Future advanced coverage Playwright scenarios 16-30 for material races, stale homework, LLM policy changes, parent/student visibility, notifications, and score overrides.",
+            "working_directory": "apps/web/school",
+            "requires_review_reason": "High-difficulty Playwright scenarios are costly and environment-sensitive; run when touched invariants justify browser race coverage.",
+            "coverage_tags": [
+                "school-playwright",
+                "concurrency",
+                "homework",
+                "llm",
+                "notifications",
+                "materials"
+            ],
+            "commands": [
+                {
+                    "label": "playwright targeted",
+                    "argv": [
+                        "node",
+                        "scripts/playwright-external-runner.cjs",
+                        "future-advanced-coverage-2.spec.js",
+                        "--project=chromium"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/e2e/web-school/future-advanced-coverage-2.spec.js",
+                    "tests/e2e/web-school/future-advanced-coverage-helpers.cjs"
+                ],
+                "globs": []
+            },
+            "ledger_id": null,
+            "notes": "Do not use as a cheap default. It is recommended mostly when the spec/helper itself changes or broad race-prone surfaces are under review."
+        },
+        {
+            "id": "school.e2e.agent_followup_batch",
+            "category": "school-playwright",
+            "risk": "targeted",
+            "description": "Additive Playwright API/navigation checks for pagination boundaries, health, settings public, and course entry.",
+            "working_directory": "apps/web/school",
+            "requires_review_reason": "Playwright targets depend on local browser, managed backend/frontend ports, seed/reset helpers, and should be run serially on default ports.",
+            "coverage_tags": [
+                "school-playwright",
+                "pagination",
+                "settings",
+                "course-access"
+            ],
+            "commands": [
+                {
+                    "label": "playwright targeted",
+                    "argv": [
+                        "node",
+                        "scripts/playwright-external-runner.cjs",
+                        "e2e-agent-followup-batch.spec.js",
+                        "--project=chromium"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/e2e/web-school/e2e-agent-followup-batch.spec.js",
+                    "apps/backend/courseeval_backend/api/routers/settings.py",
+                    "apps/backend/courseeval_backend/api/routers/subjects.py",
+                    "apps/web/school/src/views/MyCourses.vue"
+                ],
+                "globs": []
+            },
+            "ledger_id": null,
+            "notes": "Use for small API/navigation edges; prefer pytest for pure API contract expansion."
+        },
+        {
+            "id": "school.e2e.cross_cutting_edge",
+            "category": "school-playwright",
+            "risk": "targeted",
+            "description": "Cross-cutting school Playwright edge suite for multi-role interleaving, token lifecycle, validation-boundary responses, and API-plus-UI convergence under concurrency.",
+            "working_directory": "apps/web/school",
+            "requires_review_reason": "Playwright targets depend on local browser, managed backend/frontend ports, seed/reset helpers, and should be run serially on default ports.",
+            "coverage_tags": [
+                "school-playwright",
+                "auth",
+                "concurrency",
+                "multi-role",
+                "api-ui-convergence"
+            ],
+            "commands": [
+                {
+                    "label": "playwright targeted",
+                    "argv": [
+                        "node",
+                        "scripts/playwright-external-runner.cjs",
+                        "e2e-cross-cutting-edge.spec.js",
+                        "--project=chromium"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/e2e/web-school/e2e-cross-cutting-edge.spec.js",
+                    "apps/web/school/src/views/Login.vue",
+                    "apps/web/school/src/views/Layout.vue",
+                    "apps/web/school/src/views/Notifications.vue",
+                    "apps/web/school/src/router/index.js",
+                    "apps/backend/courseeval_backend/api/routers/auth.py",
+                    "apps/backend/courseeval_backend/api/routers/notifications.py",
+                    "apps/backend/courseeval_backend/api/routers/e2e_dev.py",
+                    "apps/backend/courseeval_backend/core/auth.py"
+                ],
+                "globs": []
+            },
+            "ledger_id": "school.e2e.cross_cutting_edge",
+            "notes": "Use when the spec itself changes or when auth, notification convergence, or multi-role browser/API edge handling needs a targeted browser check."
+        },
+        {
+            "id": "school.e2e.agent_hazard_tier15",
+            "category": "school-playwright",
+            "risk": "targeted",
+            "description": "API-heavy Playwright hazard tier for pagination 422 boundaries, LLM admin/student edges, parallel mark-all-read, E2E seed gates, forgot password, and disabled registration.",
+            "working_directory": "apps/web/school",
+            "requires_review_reason": "Playwright targets depend on local browser, managed backend/frontend ports, seed/reset helpers, and should be run serially on default ports.",
+            "coverage_tags": [
+                "school-playwright",
+                "e2e-dev",
+                "llm",
+                "notifications",
+                "auth"
+            ],
+            "commands": [
+                {
+                    "label": "playwright targeted",
+                    "argv": [
+                        "node",
+                        "scripts/playwright-external-runner.cjs",
+                        "e2e-agent-hazard-tier-15.spec.js",
+                        "--project=chromium"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/e2e/web-school/e2e-agent-hazard-tier-15.spec.js",
+                    "apps/backend/courseeval_backend/api/routers/e2e_dev.py",
+                    "apps/backend/courseeval_backend/api/routers/llm_settings.py",
+                    "apps/backend/courseeval_backend/api/routers/notifications.py",
+                    "apps/backend/courseeval_backend/api/routers/auth.py"
+                ],
+                "globs": []
+            },
+            "ledger_id": null,
+            "notes": "The backend TestClient hazard target is usually a cheaper first check for /api/e2e/dev route changes."
+        },
+        {
+            "id": "school.e2e.notification_header_sync_tier",
+            "category": "school-playwright",
+            "risk": "targeted",
+            "description": "Targeted school Playwright suite for header notification badge, course switcher scoped sync-status, and focus-triggered convergence.",
+            "working_directory": "apps/web/school",
+            "requires_review_reason": "Playwright targets depend on local browser, managed backend/frontend ports, seed/reset helpers, and should be run serially on default ports.",
+            "coverage_tags": [
+                "school-playwright",
+                "notifications",
+                "course-switcher"
+            ],
+            "commands": [
+                {
+                    "label": "playwright targeted",
+                    "argv": [
+                        "node",
+                        "scripts/playwright-external-runner.cjs",
+                        "e2e-notification-header-sync-tier.spec.js",
+                        "--project=chromium"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/e2e/web-school/e2e-notification-header-sync-tier.spec.js",
+                    "docs/frontend/NOTIFICATION_HEADER_AND_REALTIME_SYNC.md",
+                    "apps/web/school/src/views/Layout.vue",
+                    "apps/web/school/src/views/Notifications.vue",
+                    "apps/backend/courseeval_backend/api/routers/notifications.py"
+                ],
+                "globs": []
+            },
+            "ledger_id": null,
+            "notes": "Pair with behavior.notifications.sync_api_edge for API-state changes."
+        },
+        {
+            "id": "school.e2e.notification_sync_deep_tier",
+            "category": "school-playwright",
+            "risk": "broad",
+            "description": "Deeper notification sync Playwright tier for admin global totals, course switch discipline, localStorage poison healing, concurrent publishes, isolation, mobile viewport, cold polling, delete races, multi-class course badge boundaries, admin-only global notification write scope, notification target-user denial, UI composer course/class scope, and explicit notification target-clearing updates.",
+            "working_directory": "apps/web/school",
+            "requires_review_reason": "High-cost browser tier with concurrency and viewport coverage; run when notification UI/state convergence changes are material.",
+            "coverage_tags": [
+                "school-playwright",
+                "notifications",
+                "course-switcher",
+                "mobile",
+                "concurrency"
+            ],
+            "commands": [
+                {
+                    "label": "playwright targeted",
+                    "argv": [
+                        "node",
+                        "scripts/playwright-external-runner.cjs",
+                        "e2e-notification-sync-deep-tier.spec.js",
+                        "--project=chromium"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/e2e/web-school/e2e-notification-sync-deep-tier.spec.js",
+                    "docs/frontend/NOTIFICATION_HEADER_AND_REALTIME_SYNC.md",
+                    "apps/web/school/src/views/Layout.vue",
+                    "apps/web/school/src/views/Notifications.vue",
+                    "apps/backend/courseeval_backend/api/routers/notifications.py",
+                    "apps/backend/courseeval_backend/domains/courses/access.py"
+                ],
+                "globs": []
+            },
+            "ledger_id": "school.e2e.notification_sync_deep_tier",
+            "notes": "Use after narrower notification API/header targets when changes affect convergence or multi-role isolation."
+        },
+        {
+            "id": "postgres.pytest.package",
+            "category": "postgres-pytest",
+            "risk": "broad",
+            "description": "PostgreSQL-only pytest package for dialect-specific schema, constraint, and transaction behavior.",
+            "working_directory": ".",
+            "required_capabilities": [
+                "postgres-test-env"
+            ],
+            "requires_review_reason": "Requires a live throwaway PostgreSQL database and TEST_DATABASE_URL; the selector does not provision it.",
+            "coverage_tags": [
+                "postgres-schema",
+                "database",
+                "backend-pytest"
+            ],
+            "commands": [
+                {
+                    "label": "postgres package pytest",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "pytest",
+                        "tests/postgres",
+                        "-q"
+                    ],
+                    "requires_env": [
+                        "TEST_DATABASE_URL"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/postgres/",
+                    "tests/conftest.py",
+                    "tests/db_reset.py",
+                    "ops/scripts/dev/provision_postgres_pytest.sh",
+                    "apps/backend/courseeval_backend/db/models.py",
+                    "apps/backend/courseeval_backend/bootstrap.py"
+                ],
+                "globs": [
+                    "tests/postgres/**",
+                    "apps/backend/courseeval_backend/db/**"
+                ]
+            },
+            "ledger_id": "postgres.pytest.package",
+            "notes": "The selector can recommend this target but does not provision PostgreSQL. Use the local orchestrator or documented Postgres setup."
+        },
+        {
+            "id": "full.pytest.postgres",
+            "category": "full-suite",
+            "risk": "full",
+            "description": "Full pytest tree under PostgreSQL, intended for release-quality backend validation and zero PostgreSQL-only skips.",
+            "working_directory": ".",
+            "required_capabilities": [
+                "postgres-test-env"
+            ],
+            "requires_review_reason": "Expensive environment-dependent full backend profile; requires PostgreSQL and supported attachment extractors before it can prove zero-skip validation.",
+            "risk_escalation": "Required or strongly recommended for schema, auth/security, DB reset, bootstrap, or broad backend changes.",
+            "coverage_tags": [
+                "postgres-schema",
+                "full-backend",
+                "database",
+                "security"
+            ],
+            "commands": [
+                {
+                    "label": "postgres full pytest",
+                    "argv": [
+                        ".venv/Scripts/python.exe",
+                        "-m",
+                        "pytest",
+                        "tests",
+                        "-q"
+                    ],
+                    "requires_env": [
+                        "TEST_DATABASE_URL"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "tests/conftest.py",
+                    "tests/db_reset.py",
+                    "pytest.ini",
+                    "requirements.txt",
+                    "apps/backend/courseeval_backend/main.py",
+                    "apps/backend/courseeval_backend/bootstrap.py",
+                    "apps/backend/courseeval_backend/db/models.py"
+                ],
+                "globs": [
+                    "tests/behavior/**",
+                    "tests/security/**",
+                    "tests/postgres/**",
+                    "apps/backend/courseeval_backend/db/**"
+                ]
+            },
+            "ledger_id": "full.pytest.postgres",
+            "notes": "Recommended for high-blast-radius backend, schema, test reset, behavior/security, or release-quality claims. It is expensive and environment-dependent."
+        },
+        {
+            "id": "school.e2e.full",
+            "category": "school-playwright",
+            "risk": "full",
+            "policy_requirement": "required-review",
+            "description": "Full school Playwright E2E suite under apps/web/school. Recommended when shared E2E harness, Playwright config, global setup, seed/reset, auth, or broad frontend routing changes make targeted evidence too weak.",
+            "working_directory": "apps/web/school",
+            "required_capabilities": [
+                "playwright-managed"
+            ],
+            "requires_review_reason": "High-cost browser profile with local browser, port, seed/reset, backend, and frontend dependencies; run serially unless isolated ports are configured.",
+            "risk_escalation": "Required or strongly recommended for Playwright harness, global setup, admin router, auth layout, seed/reset, or broad frontend navigation changes.",
+            "coverage_tags": [
+                "school-playwright",
+                "playwright-harness",
+                "full-browser"
+            ],
+            "commands": [
+                {
+                    "label": "full playwright",
+                    "argv": [
+                        "node",
+                        "scripts/playwright-external-runner.cjs"
+                    ]
+                }
+            ],
+            "triggers": {
+                "paths": [
+                    "apps/web/school/playwright.config.cjs",
+                    "tests/e2e/web-school/global-setup.cjs",
+                    "tests/e2e/web-school/fixtures.cjs",
+                    "tests/e2e/web-school/future-advanced-coverage-helpers.cjs",
+                    "apps/backend/courseeval_backend/api/routers/e2e_dev.py",
+                    "apps/backend/courseeval_backend/main.py",
+                    "apps/web/school/src/router/index.js"
+                ],
+                "globs": [
+                    "tests/e2e/web-school/**/*.cjs",
+                    "tests/e2e/web-school/**/*.spec.js",
+                    "apps/web/school/src/router/**"
+                ]
+            },
+            "ledger_id": null,
+            "notes": "The current ledger records targeted Playwright but not a current full school Playwright run for this branch. Treat this as a high-cost recommendation, not an automatic command to start."
+        }
+    ],
+    "fallback_rules": [
+        {
+            "id": "backend-high-blast-radius",
+            "description": "Shared backend entrypoint, auth, config, bootstrap, schema, and E2E-dev gate changes require broad backend context beyond one targeted suite.",
+            "if_any_path_matches": [
+                "apps/backend/courseeval_backend/main.py",
+                "apps/backend/courseeval_backend/bootstrap.py",
+                "apps/backend/courseeval_backend/core/config.py",
+                "apps/backend/courseeval_backend/core/auth.py",
+                "apps/backend/courseeval_backend/api/routers/classes.py",
+                "apps/backend/courseeval_backend/api/routers/e2e_dev.py",
+                "apps/backend/courseeval_backend/db/models.py",
+                "tests/conftest.py",
+                "tests/db_reset.py",
+                "pytest.ini",
+                "requirements.txt"
+            ],
+            "recommend": [
+                "full.pytest.postgres"
+            ]
+        },
+        {
+            "id": "docs-only-static",
+            "description": "When all changed files are documentation or repository policy files, static checks are normally enough unless the docs claim runtime behavior changed.",
+            "if_all_paths_match": [
+                "*.md",
+                "docs/**",
+                "AGENTS.md",
+                "README.md",
+                ".gitignore"
+            ],
+            "recommend": [
+                "static.encoding_text_tools"
+            ]
+        },
+        {
+            "id": "backend-source-conservative",
+            "description": "Unmapped backend source changes should receive at least full PostgreSQL pytest consideration because the selector lacks a precise dependency graph.",
+            "if_any_unmatched_path_matches": [
+                "apps/backend/courseeval_backend/*.py",
+                "apps/backend/courseeval_backend/**/*.py"
+            ],
+            "recommend": [
+                "full.pytest.postgres"
+            ]
+        },
+        {
+            "id": "admin-frontend-conservative",
+            "description": "School frontend source changes without a more specific Playwright target should receive full Playwright consideration after the build.",
+            "if_any_path_matches": [
+                "apps/web/school/src/*",
+                "apps/web/school/src/**"
+            ],
+            "unless_recommended_categories": [
+                "school-playwright"
+            ],
+            "recommend": [
+                "frontend.school.build",
+                "school.e2e.full"
+            ]
+        },
+        {
+            "id": "playwright-harness-conservative",
+            "description": "Any shared Playwright harness/config change should receive full Playwright consideration.",
+            "if_any_path_matches": [
+                "apps/web/school/playwright.config.cjs",
+                "tests/e2e/web-school/**/*.cjs"
+            ],
+            "recommend": [
+                "school.e2e.full"
+            ]
+        }
+    ]
+}

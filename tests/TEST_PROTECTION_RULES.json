@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "description": "Protection rules for high-value or high-difficulty tests. Audit tooling must treat these as do-not-delete unless a human explicitly overrides the policy.",
+  "protected_globs": [
+    {
+      "pattern": "tests/e2e/web-school/**/*.spec.js",
+      "reason": "Browser E2E tests are high-difficulty and high-value coverage."
+    },
+    {
+      "pattern": "tests/behavior/test_*.py",
+      "reason": "Behavior suites cover multi-actor and cross-module regressions."
+    },
+    {
+      "pattern": "tests/backend/llm/test_llm_concurrency_scenarios.py",
+      "reason": "Concurrency tests cover queueing and convergence risks."
+    },
+    {
+      "pattern": "tests/backend/llm/test_llm_stress_scenarios.py",
+      "reason": "Stress scenarios cover timing and throughput risks."
+    },
+    {
+      "pattern": "tests/backend/e2e_dev/test_*.py",
+      "reason": "Seed/bootstrap tests protect E2E reset and startup assumptions."
+    },
+    {
+      "pattern": "tests/backend/roster/test_roster_enroll_and_batch_class.py",
+      "reason": "Roster and batch-class workflows are broad and historically fragile."
+    },
+    {
+      "pattern": "tests/backend/homework/test_homework_llm_grading.py",
+      "reason": "Homework plus LLM grading flows sit on a central product path."
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "School Playwright E2E"
+  short_description: "Run and debug CourseEval school Playwright with the repo-supported workflow."
+  default_prompt: "Use this skill to run or debug CourseEval school Playwright E2E."

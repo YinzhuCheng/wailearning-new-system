@@ -1,0 +1,4 @@
+interface:
+  display_name: "Boundary Governance"
+  short_description: "Clarify module, permission, import, and data-flow ownership."
+  default_prompt: "Use this skill to identify CourseEval boundary drift and apply only low-risk, testable boundary cleanups."

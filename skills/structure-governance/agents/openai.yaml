@@ -1,0 +1,4 @@
+interface:
+  display_name: "Structure Governance"
+  short_description: "Organize CourseEval folders, root files, and structural references."
+  default_prompt: "Use this skill to perform low-risk CourseEval repository structure cleanup and update all references."

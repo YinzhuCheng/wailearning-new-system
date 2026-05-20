@@ -1,0 +1,4 @@
+interface:
+  display_name: "Interruptible Full Validation Rounds"
+  short_description: "Run full validation as block-by-block rounds with launch, hang-up, reconnect, and durable WAI-VALID evidence."
+  default_prompt: "Use this skill to execute full validation block by block, requiring round-plan-discipline for the plan and parallel-validation-orchestration for each block launch, while stopping communication after each launched block."

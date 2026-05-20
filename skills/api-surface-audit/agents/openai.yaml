@@ -1,0 +1,4 @@
+interface:
+  display_name: "API Surface Audit"
+  short_description: "Audit CourseEval routers, frontend API clients, and API docs."
+  default_prompt: "Use this skill to review CourseEval API surface changes safely."

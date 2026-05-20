@@ -1,0 +1,4 @@
+interface:
+  display_name: "Security Red-Team Parallel Attacks"
+  short_description: "Plan a four-slot red-team batch with at least one browser-backed E2E attack."
+  default_prompt: "Use this skill to plan one CourseEval red-team batch as four parallel attacks with at least one E2E slot."

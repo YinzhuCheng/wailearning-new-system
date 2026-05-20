@@ -1,0 +1,4 @@
+interface:
+  display_name: "Docs Governance"
+  short_description: "Refine CourseEval docs and turn repeated pitfalls into rules or scripts."
+  default_prompt: "Use this skill to update CourseEval documentation so it matches current code and remains agent-operable."

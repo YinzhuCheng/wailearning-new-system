@@ -1,0 +1,4 @@
+interface:
+  display_name: "Deployment Governance"
+  short_description: "Keep CourseEval deploy scripts and operations docs aligned."
+  default_prompt: "Use this skill when changing CourseEval deployment scripts or ops docs."

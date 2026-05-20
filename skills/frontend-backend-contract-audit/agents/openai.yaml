@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frontend Backend Contract Audit"
+  short_description: "Audit CourseEval Vue and FastAPI contract boundaries."
+  default_prompt: "Use this skill to review frontend/backend API contract changes."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "PostgreSQL Release Validation"
+  short_description: "Run production-aligned PostgreSQL validation for CourseEval."
+  default_prompt: "Use this skill to plan and run PostgreSQL-backed CourseEval validation."

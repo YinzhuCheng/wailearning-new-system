@@ -1,0 +1,81 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Local attachment storage (dev/pytest)
+uploads/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Frontend
+apps/web/school/dist/
+apps/web/school/.vite/
+apps/web/school/test-results/
+frontend/
+
+# Parent Portal
+apps/web/parent/dist/
+apps/web/parent/.vite/
+
+# E2E
+tests/e2e/web-school/.cache/
+.agent-run/
+.e2e-run/
+playwright-report/
+
+# Temp Files
+.pytest_tmp/
+.pytest_tmpbasetemp/
+.pytest-db/
+.pytest_cache/
+test-results/
+.coverage
+.coverage.*
+htmlcov/
+*.pyc
+create_*.py
+add_*.py
+test_*.py
+!tests/
+!tests/**/*.py
+temp_*.py

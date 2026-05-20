@@ -1,0 +1,4 @@
+interface:
+  display_name: "Local Test Triage"
+  short_description: "Diagnose local CourseEval test hazards."
+  default_prompt: "Use this skill when local CourseEval tests fail or look environment-related."

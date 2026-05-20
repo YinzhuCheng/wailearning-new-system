@@ -1,0 +1,4 @@
+interface:
+  display_name: "Validation Selection"
+  short_description: "Choose and run change-scoped CourseEval validation targets."
+  default_prompt: "Use this skill to select and run validation for my CourseEval changes."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Roster Identity Repair"
+  short_description: "Audit and repair CourseEval student identity bindings."
+  default_prompt: "Use this skill to audit or change CourseEval student identity and roster repair behavior."

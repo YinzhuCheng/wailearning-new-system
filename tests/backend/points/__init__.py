@@ -1,0 +1,1 @@
+"""Points-system backend tests."""

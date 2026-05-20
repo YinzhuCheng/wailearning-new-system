@@ -1,0 +1,4 @@
+interface:
+  display_name: "Parallel Validation Orchestration"
+  short_description: "Run CourseEval validation with automatic slot refill and durable progress tracking."
+  default_prompt: "Use this skill to plan and supervise parallel CourseEval validation blocks with visible monitoring and stable progress files."

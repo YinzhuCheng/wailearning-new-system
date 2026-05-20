@@ -1,0 +1,157 @@
+name: Lightweight validation
+
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+
+jobs:
+  python-selector-tooling:
+    name: Python selector tooling
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Validate selector tooling and registry
+        run: |
+          python -m py_compile \
+            ops/scripts/dev/validation_history.py \
+            ops/scripts/dev/select_validation_targets.py \
+            ops/scripts/dev/run_validation_target.py \
+            ops/scripts/dev/run_validation_profile.py \
+            ops/scripts/dev/lint_validation_registry.py \
+            ops/scripts/dev/check_ci_baselines.py \
+            ops/scripts/dev/check_validation_capabilities.py \
+            ops/scripts/dev/check_high_risk_path_metadata.py \
+            ops/scripts/dev/check_validation_policy_gate.py \
+            ops/scripts/dev/sync_testing_governance_docs.py \
+            ops/scripts/dev/sync_pitfall_index_lines.py \
+            ops/scripts/dev/check_repository_normalization.py \
+            tests/backend/manual/test_validation_selector.py
+          python -m json.tool tests/TEST_SELECTION_TARGETS.json >/dev/null
+          python ops/scripts/dev/check_ci_baselines.py
+          python ops/scripts/dev/check_high_risk_path_metadata.py
+          python ops/scripts/dev/sync_testing_governance_docs.py --check
+          python ops/scripts/dev/sync_pitfall_index_lines.py --check
+          python ops/scripts/dev/check_repository_normalization.py
+          python -m unittest tests.backend.manual.test_validation_selector -v
+
+      - name: Emit diff-based validation recommendation
+        if: github.event_name == 'pull_request'
+        run: |
+          python ops/scripts/dev/select_validation_targets.py \
+            --base origin/${{ github.base_ref }} \
+            --head HEAD \
+            --json > validation-selection.json
+          python ops/scripts/dev/select_validation_targets.py \
+            --base origin/${{ github.base_ref }} \
+            --head HEAD
+
+      - name: Enforce validation policy against lightweight CI lane
+        if: github.event_name == 'pull_request'
+        run: |
+          python ops/scripts/dev/check_validation_policy_gate.py \
+            --selection-file validation-selection.json \
+            --available-policy-classes \
+              static-check \
+              backend-pytest \
+              behavior-pytest \
+              security-pytest \
+              frontend-build \
+              frontend-node-test
+
+      - name: Upload validation recommendation
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-selection
+          path: validation-selection.json
+
+  backend-quick-pytest:
+    name: Backend quick pytest
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Run quick backend pytest
+        run: |
+          python -m pytest -q --junitxml=backend-quick-pytest.xml | tee backend-quick-pytest.log
+          python ops/scripts/dev/check_validation_lane_budgets.py \
+            --lane backend-quick-pytest \
+            --budgets docs/testing/validation-lane-budgets.json \
+            --junitxml backend-quick-pytest.xml \
+            --log backend-quick-pytest.log
+
+  admin-frontend-build:
+    name: School frontend build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: apps/web/school/package-lock.json
+
+      - name: Install school frontend dependencies
+        working-directory: apps/web/school
+        run: npm ci
+
+      - name: Build school frontend
+        working-directory: apps/web/school
+        run: npm run build
+
+  parent-frontend-build:
+    name: Parent frontend build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: apps/web/parent/package-lock.json
+
+      - name: Install parent frontend dependencies
+        working-directory: apps/web/parent
+        run: npm ci
+
+      - name: Build parent frontend
+        working-directory: apps/web/parent
+        run: npm run build

@@ -1,0 +1,27 @@
+[Unit]
+Description=CourseEval FastAPI backend
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=courseeval
+Group=courseeval
+WorkingDirectory=/opt/courseeval/source
+Environment=PYTHONUNBUFFERED=1
+Environment=PORT=8001
+Environment=GUNICORN_WORKERS=3
+Environment=LOG_LEVEL=info
+Environment=UPLOADS_DIR=/opt/courseeval/shared/uploads
+EnvironmentFile=/opt/courseeval/shared/.env.production
+ExecStartPre=/opt/courseeval/venv/bin/python -m apps.backend.courseeval_backend.bootstrap
+ExecStart=/bin/bash -lc '/opt/courseeval/venv/bin/gunicorn --workers "${GUNICORN_WORKERS:-3}" --worker-class uvicorn.workers.UvicornWorker --bind 127.0.0.1:"${PORT:-8001}" --log-level "${LOG_LEVEL:-info}" --access-logfile - --error-logfile - apps.backend.courseeval_backend.main:app'
+Restart=always
+RestartSec=5
+TimeoutStartSec=90
+KillSignal=SIGQUIT
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

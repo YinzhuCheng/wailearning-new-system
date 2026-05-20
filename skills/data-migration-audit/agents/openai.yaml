@@ -1,0 +1,4 @@
+interface:
+  display_name: "Data Migration Audit"
+  short_description: "Audit CourseEval model, schema repair, and data migration changes."
+  default_prompt: "Use this skill to review CourseEval schema or data migration work safely."

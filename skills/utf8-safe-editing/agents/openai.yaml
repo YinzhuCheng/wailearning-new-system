@@ -1,0 +1,4 @@
+interface:
+  display_name: "UTF-8 Safe Editing"
+  short_description: "Edit multilingual CourseEval files safely on Windows."
+  default_prompt: "Use this skill before editing multilingual or encoding-sensitive files."
