@@ -6,7 +6,7 @@ if [[ "${EUID}" -ne 0 ]]; then
   exit 1
 fi
 
-GIT_REPO="${GIT_REPO:-https://github.com/YinzhuCheng/wailearning.git}"
+GIT_REPO="${GIT_REPO:-https://github.com/YinzhuCheng/wailearning-new-system.git}"
 GIT_BRANCH="${GIT_BRANCH:-main}"
 APP_ROOT="${APP_ROOT:-/opt/courseeval}"
 WEB_ROOT="${WEB_ROOT:-/var/www/courseeval.example}"
@@ -31,6 +31,7 @@ DEFAULT_LLM_API_KEY="${DEFAULT_LLM_API_KEY:-}"
 ENABLE_CERTBOT="${ENABLE_CERTBOT:-0}"
 CERTBOT_EMAIL="${CERTBOT_EMAIL:-}"
 CERTBOT_CERT_NAME="${CERTBOT_CERT_NAME:-${PUBLIC_WWW_HOST}}"
+BACKEND_PORT="${BACKEND_PORT:-8001}"
 
 require_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -62,11 +63,11 @@ write_env_file() {
 
   install -d -m 0755 "${SHARED_DIR}"
   cat >"${ENV_FILE}" <<EOF
-APP_NAME=CourseEval API
+APP_NAME="CourseEval API"
 APP_ENV=production
 DEBUG=false
 HOST=127.0.0.1
-PORT=8001
+PORT=${BACKEND_PORT}
 
 DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@127.0.0.1:5432/${DB_NAME}
 SECRET_KEY=${SECRET_KEY}
@@ -79,7 +80,7 @@ TRUSTED_HOSTS=${trusted_hosts}
 
 INIT_ADMIN_USERNAME=${INIT_ADMIN_USERNAME}
 INIT_ADMIN_PASSWORD=${INIT_ADMIN_PASSWORD}
-INIT_ADMIN_REAL_NAME=${INIT_ADMIN_REAL_NAME}
+INIT_ADMIN_REAL_NAME="${INIT_ADMIN_REAL_NAME}"
 INIT_DEFAULT_DATA=${INIT_DEFAULT_DATA}
 ALLOW_PUBLIC_REGISTRATION=${ALLOW_PUBLIC_REGISTRATION}
 PUBLIC_REGISTRATION_VALIDATE_CLASS_EXISTS=true
@@ -175,7 +176,7 @@ maybe_issue_cert
 echo "==> 8/8 Final summary"
 echo "Branch: $(git -C "${SOURCE_DIR}" rev-parse --abbrev-ref HEAD)"
 echo "Commit: $(git -C "${SOURCE_DIR}" rev-parse --short HEAD)"
-echo "Backend local health: http://127.0.0.1:8001/health"
+echo "Backend local health: http://127.0.0.1:${BACKEND_PORT}/health"
 if [[ -n "${PUBLIC_IP}" ]]; then
   echo "HTTP URL: http://${PUBLIC_IP}/"
   echo "Parent URL: http://${PUBLIC_IP}/parent/"

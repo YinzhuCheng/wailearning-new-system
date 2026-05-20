@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+###############################################################################
+# 新系统：旧系统迁移包导入启动器
+# 使用方法：
+# 1. 先把旧系统导出的 <label>.tar.gz 复制到新系统服务器。
+# 2. 替换本段占位符。
+# 3. 把全文粘贴到新系统服务器的阿里云 Workbench，按回车。
+#
+# 注意：导入会先做新系统数据库快照，然后停止后端、恢复数据库、解压附件。
+# 为避免误操作，必须把 CONFIRM_IMPORT 改成 YES。
+###############################################################################
+
+export APP_NAME="wailearning-new-system"
+export ENV_FILE="/opt/wailearning-new-system/current/.env.production"
+export RELEASE_DIR="/opt/wailearning-new-system/current"
+export BACKEND_PORT="8002"
+export MIGRATION_BUNDLE="<PATH_TO_OLD_SYSTEM_MIGRATION_TAR_GZ>"
+export CONFIRM_IMPORT="<TYPE_YES_TO_IMPORT>"
+
+export IMPORT_SCRIPT_URL="https://raw.githubusercontent.com/YinzhuCheng/wailearning-new-system/main/docs/migration/import_migration_bundle.sh"
+
+###############################################################################
+# 以下内容通常不需要修改。
+###############################################################################
+
+if [ "$(id -u)" -ne 0 ]; then
+  echo "请用 root 用户运行。"
+  exit 1
+fi
+
+assert_replaced() {
+  local name="$1"
+  local value="$2"
+  if [[ -z "${value}" || "${value}" == \<* ]]; then
+    echo "请先替换占位符：${name}"
+    exit 1
+  fi
+}
+
+ensure_downloader() {
+  if command -v curl >/dev/null 2>&1; then
+    return 0
+  fi
+  echo "当前系统缺少 curl，先安装下载工具。"
+  if command -v apt-get >/dev/null 2>&1; then
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y curl ca-certificates
+  elif command -v dnf >/dev/null 2>&1; then
+    dnf install -y curl ca-certificates
+  elif command -v yum >/dev/null 2>&1; then
+    yum install -y curl ca-certificates
+  else
+    echo "未识别系统包管理器，无法自动安装 curl。"
+    exit 1
+  fi
+}
+
+assert_replaced "MIGRATION_BUNDLE" "${MIGRATION_BUNDLE}"
+if [ "${CONFIRM_IMPORT}" != "YES" ]; then
+  echo "导入会覆盖新系统数据库。请确认备份后把 CONFIRM_IMPORT 改为 YES。"
+  exit 1
+fi
+
+RUN_DIR="/root/${APP_NAME}-migration"
+REMOTE_SCRIPT="${RUN_DIR}/import_migration_bundle.sh"
+mkdir -p "${RUN_DIR}"
+
+ensure_downloader
+echo "下载仓库内最新迁移导入脚本：${IMPORT_SCRIPT_URL}"
+curl -fsSL --retry 3 --connect-timeout 20 "${IMPORT_SCRIPT_URL}" -o "${REMOTE_SCRIPT}"
+chmod +x "${REMOTE_SCRIPT}"
+
+echo "开始导入迁移包。"
+bash "${REMOTE_SCRIPT}"

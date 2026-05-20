@@ -16,13 +16,14 @@ if [[ -z "${PUBLIC_API_HEALTH_URL}" && -n "${_app_url}" && "${API_HEALTH_URL}" =
   PUBLIC_API_HEALTH_URL="${_app_url}/api/health"
 fi
 BACKEND_SERVICE="${BACKEND_SERVICE:-courseeval-backend}"
+BACKEND_PORT="${BACKEND_PORT:-8001}"
 LOCAL_HEALTH_RETRIES="${LOCAL_HEALTH_RETRIES:-30}"
 LOCAL_HEALTH_INTERVAL_SECONDS="${LOCAL_HEALTH_INTERVAL_SECONDS:-1}"
 
 wait_for_local_health() {
   local attempt
   for ((attempt = 1; attempt <= LOCAL_HEALTH_RETRIES; attempt++)); do
-    if curl -fsS http://127.0.0.1:8001/health >/dev/null 2>&1; then
+    if curl -fsS "http://127.0.0.1:${BACKEND_PORT}/health" >/dev/null 2>&1; then
       return 0
     fi
     sleep "${LOCAL_HEALTH_INTERVAL_SECONDS}"
@@ -45,7 +46,7 @@ systemctl --no-pager --full status "${BACKEND_SERVICE}" || true
 
 echo "==> local backend health"
 if wait_for_local_health; then
-  curl -fsS http://127.0.0.1:8001/health
+  curl -fsS "http://127.0.0.1:${BACKEND_PORT}/health"
 else
   echo "Local backend health check failed after ${LOCAL_HEALTH_RETRIES} attempts."
   echo "Tip: increase LOCAL_HEALTH_RETRIES / LOCAL_HEALTH_INTERVAL_SECONDS and retry."

@@ -2,22 +2,37 @@
 
 本仓库是新系统发布副本。旧系统来源建议使用 `YinzhuCheng/wailearning-old-system`。
 
+## 推荐方式
+
+优先使用短启动器导入迁移包，避免在 Workbench 里手写多行 `pg_restore`、`tar`、`systemctl` 命令时出现换行、缩进或参数截断问题。
+
+1. 在旧系统服务器执行旧系统仓库的 `docs/migration/ALIYUN_WORKBENCH_EXPORT_MIGRATION_BUNDLE.txt`。
+2. 将生成的 `/root/wailearning-migration/<label>.tar.gz` 复制到新系统服务器。
+3. 在新系统服务器执行 `docs/migration/ALIYUN_WORKBENCH_IMPORT_MIGRATION_BUNDLE.txt`。
+4. 导入脚本会先备份新系统数据库，再停止后端、恢复旧数据、恢复附件、运行 bootstrap、重启服务并做健康检查。
+
 ## 迁移前准备
 
-- 准备旧系统数据库备份文件，例如 `old-system.dump`。
-- 准备旧系统附件压缩包，例如 `old-uploads.tar.gz`。
+- 准备旧系统迁移包，例如 `/root/old-to-new-20260520230000.tar.gz`。
 - 在新系统服务器完成部署，并确认 `.env.production` 中的数据库、密钥、域名和 LLM 参数已经替换。
-- 确认新系统 PostgreSQL 版本、字符集和时区配置符合生产要求。
+- 确认新系统后端健康：`curl -fsS http://127.0.0.1:8002/api/health`。
+- 导入会覆盖新系统数据库；启动器要求显式设置 `CONFIRM_IMPORT="YES"`。
 
-## 数据导入步骤
+## 手动导入参考
 
-1. 停止新系统后端服务：`systemctl stop <NEW_BACKEND_SERVICE>`。
-2. 创建或清空新系统数据库，保留一次恢复前快照。
-3. 恢复旧系统数据：`pg_restore --clean --if-exists --dbname "$DATABASE_URL" old-system.dump`。
-4. 解压附件：`tar -xzf old-uploads.tar.gz -C <NEW_UPLOAD_PARENT_DIR>`。
-5. 检查上传目录权限，确保运行后端服务的用户可以读写。
-6. 启动新系统后端服务：`systemctl start <NEW_BACKEND_SERVICE>`。
-7. 登录管理员、教师、学生、家长入口做 smoke test。
+如果不使用启动器，手动导入至少包含以下步骤：
+
+```bash
+systemctl stop wailearning-new-system.service
+pg_dump -Fc "$DATABASE_URL" -f before-import.dump
+pg_restore --clean --if-exists --no-owner --dbname "$DATABASE_URL" old-system.dump
+tar -xzf old-uploads.tar.gz -C <NEW_UPLOAD_PARENT_DIR>
+/opt/wailearning-new-system/current/.venv/bin/python -m apps.backend.courseeval_backend.bootstrap
+systemctl start wailearning-new-system.service
+curl -fsS http://127.0.0.1:8002/api/health
+```
+
+手动方式容易遗漏导入前备份、附件路径和 bootstrap，生产迁移建议使用启动器。
 
 ## 迁移后核对清单
 
@@ -31,5 +46,6 @@
 ## 回滚策略
 
 - 新系统验证完成前不要删除旧系统数据库和附件。
+- 导入脚本会创建导入前数据库备份，默认位置是 `/root/wailearning-migration-import-backups/`。
 - 域名切换失败时，把 DNS A 记录或 Nginx upstream 切回旧系统公网 IP。
 - 回滚后重新冻结旧系统写入，再重新导出迁移包。
