@@ -15,6 +15,14 @@ set -Eeuo pipefail
 # 4. 进入“解析设置”。
 # 5. 添加 A 记录：主机记录填 @、www 或 app；记录值填这台 ECS 公网 IP；TTL 保持默认。
 # 6. 等解析生效后运行脚本，并确认 ECS 安全组放行 80 和 443 端口。
+#
+# 默认 INIT_DEFAULT_DATA=true 会写入可见演示业务数据。
+# 部署完成后可用这些账号检查：
+# 管理员：你在 INIT_ADMIN_USERNAME / INIT_ADMIN_PASSWORD 中设置的账号。
+# 任课老师：teacher / 111111
+# 概率课老师：teacher_pro / teacher_pro
+# 学生：stu1 / 111111
+# 家长端：访问 /parent/ 后使用家长码 NWP001A1
 ###############################################################################
 
 export DEPLOY_MODE="https"

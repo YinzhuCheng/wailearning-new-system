@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
 from apps.backend.courseeval_backend.core.auth import get_password_hash
-from apps.backend.courseeval_backend.db.models import Class, Student, User, UserRole
+from apps.backend.courseeval_backend.db.models import Class, Gender, Student, User, UserRole
 
 DEMO_PASSWORD = "111111"
 DEMO_CLASS_NAME = "人工智能1班"
@@ -23,6 +24,14 @@ DEMO_STUDENT_SPECS = (
     ("stu4", "学生四", "13800001004"),
     ("stu5", "学生五", "13800001005"),
 )
+
+DEMO_PARENT_CODES = {
+    "stu1": "NWP001A1",
+    "stu2": "NWP002B2",
+    "stu3": "NWP003C3",
+    "stu4": "NWP004D4",
+    "stu5": "NWP005E5",
+}
 
 
 @dataclass(frozen=True)
@@ -86,7 +95,8 @@ def ensure_demo_roster_context(db: Session) -> DemoRosterContext:
     else:
         print(f"Demo class '{DEMO_CLASS_NAME}' already exists.")
 
-    for uname, display, phone in DEMO_STUDENT_SPECS:
+    parent_code_expires = datetime.now(timezone.utc) + timedelta(days=365)
+    for index, (uname, display, phone) in enumerate(DEMO_STUDENT_SPECS):
         user = db.query(User).filter(User.username == uname).first()
         if not user:
             user = User(
@@ -117,12 +127,20 @@ def ensure_demo_roster_context(db: Session) -> DemoRosterContext:
                     class_id=klass.id,
                     teacher_id=teacher.id,
                     phone=phone,
+                    parent_phone=f"13900001{index + 1:03d}",
+                    gender=Gender.MALE if index % 2 == 0 else Gender.FEMALE,
+                    parent_code=DEMO_PARENT_CODES[uname],
+                    parent_code_expires=parent_code_expires,
                 )
             )
             print(f"Created roster row for '{uname}'.")
         else:
             student.teacher_id = teacher.id
             student.phone = phone
+            student.parent_phone = student.parent_phone or f"13900001{index + 1:03d}"
+            student.gender = student.gender or (Gender.MALE if index % 2 == 0 else Gender.FEMALE)
+            student.parent_code = DEMO_PARENT_CODES[uname]
+            student.parent_code_expires = student.parent_code_expires or parent_code_expires
             if (student.name or "") != display:
                 student.name = display
 

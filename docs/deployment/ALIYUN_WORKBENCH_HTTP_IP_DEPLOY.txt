@@ -9,6 +9,14 @@ set -Eeuo pipefail
 # 3. 本启动器会下载仓库内最新部署脚本并执行，避免长脚本粘贴截断。
 #
 # ECS 安全组需要放行 80 端口。
+#
+# 默认 INIT_DEFAULT_DATA=true 会写入可见演示业务数据。
+# 部署完成后可用这些账号检查：
+# 管理员：你在 INIT_ADMIN_USERNAME / INIT_ADMIN_PASSWORD 中设置的账号。
+# 任课老师：teacher / 111111
+# 概率课老师：teacher_pro / teacher_pro
+# 学生：stu1 / 111111
+# 家长端：访问 /parent/ 后使用家长码 NWP001A1
 ###############################################################################
 
 export DEPLOY_MODE="http"

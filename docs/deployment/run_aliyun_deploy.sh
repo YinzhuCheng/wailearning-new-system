@@ -318,6 +318,12 @@ NGINX_EOF
   echo "管理员账号：${INIT_ADMIN_USERNAME}"
   echo "管理员密码：${INIT_ADMIN_PASSWORD}"
   echo "伪数据开关 INIT_DEFAULT_DATA=${INIT_DEFAULT_DATA}"
+  if [ "${INIT_DEFAULT_DATA}" = "true" ]; then
+    echo "新系统演示教师账号：teacher / 111111"
+    echo "新系统概率课教师账号：teacher_pro / teacher_pro"
+    echo "新系统学生演示账号：stu1 / 111111"
+    echo "新系统家长端演示码：NWP001A1"
+  fi
   echo "部署日志目录：${LOG_DIR}"
 }
 
