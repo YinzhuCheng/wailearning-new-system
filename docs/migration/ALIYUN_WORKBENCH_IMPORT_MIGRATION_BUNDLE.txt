@@ -19,7 +19,11 @@ export BACKEND_PORT="8002"
 export MIGRATION_BUNDLE="<PATH_TO_OLD_SYSTEM_MIGRATION_TAR_GZ>"
 export CONFIRM_IMPORT="<TYPE_YES_TO_IMPORT>"
 
-export IMPORT_SCRIPT_URL="https://raw.githubusercontent.com/YinzhuCheng/wailearning-new-system/main/docs/migration/import_migration_bundle.sh"
+export GITHUB_OWNER="YinzhuCheng"
+export GITHUB_REPO="wailearning-new-system"
+export GITHUB_BRANCH="main"
+export RAW_BASE="https://raw.githubusercontent.com"
+export IMPORT_SCRIPT_PATH="docs/migration/import_migration_bundle.sh"
 
 ###############################################################################
 # 以下内容通常不需要修改。
@@ -57,6 +61,12 @@ ensure_downloader() {
   fi
 }
 
+download_file() {
+  local url="$1"
+  local output="$2"
+  curl -fsSL --retry 3 --connect-timeout 20 "$url" -o "$output"
+}
+
 assert_replaced "MIGRATION_BUNDLE" "${MIGRATION_BUNDLE}"
 if [ "${CONFIRM_IMPORT}" != "YES" ]; then
   echo "导入会覆盖新系统数据库。请确认备份后把 CONFIRM_IMPORT 改为 YES。"
@@ -68,8 +78,11 @@ REMOTE_SCRIPT="${RUN_DIR}/import_migration_bundle.sh"
 mkdir -p "${RUN_DIR}"
 
 ensure_downloader
+IMPORT_SCRIPT_URL="${RAW_BASE}/${GITHUB_OWNER}/${GITHUB_REPO}"
+IMPORT_SCRIPT_URL="${IMPORT_SCRIPT_URL}/${GITHUB_BRANCH}"
+IMPORT_SCRIPT_URL="${IMPORT_SCRIPT_URL}/${IMPORT_SCRIPT_PATH}"
 echo "下载仓库内最新迁移导入脚本：${IMPORT_SCRIPT_URL}"
-curl -fsSL --retry 3 --connect-timeout 20 "${IMPORT_SCRIPT_URL}" -o "${REMOTE_SCRIPT}"
+download_file "${IMPORT_SCRIPT_URL}" "${REMOTE_SCRIPT}"
 chmod +x "${REMOTE_SCRIPT}"
 
 echo "开始导入迁移包。"

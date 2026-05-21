@@ -38,7 +38,11 @@ export INIT_DEFAULT_DATA="true"
 export DEFAULT_LLM_API_KEY="<REPLACE_WITH_LLM_API_KEY>"
 export SECRET_KEY="<REPLACE_WITH_RANDOM_SECRET_AT_LEAST_32_CHARS>"
 
-export DEPLOY_SCRIPT_URL="https://raw.githubusercontent.com/YinzhuCheng/wailearning-new-system/main/docs/deployment/run_aliyun_deploy.sh"
+export GITHUB_OWNER="YinzhuCheng"
+export GITHUB_REPO="wailearning-new-system"
+export GITHUB_BRANCH="main"
+export RAW_BASE="https://raw.githubusercontent.com"
+export DEPLOY_SCRIPT_PATH="docs/deployment/run_aliyun_deploy.sh"
 
 ###############################################################################
 # 以下内容通常不需要修改。
@@ -76,6 +80,12 @@ ensure_downloader() {
   fi
 }
 
+download_file() {
+  local url="$1"
+  local output="$2"
+  curl -fsSL --retry 3 --connect-timeout 20 "$url" -o "$output"
+}
+
 assert_replaced "PUBLIC_IP" "${PUBLIC_IP}"
 assert_replaced "DB_PASSWORD" "${DB_PASSWORD}"
 assert_replaced "INIT_ADMIN_PASSWORD" "${INIT_ADMIN_PASSWORD}"
@@ -87,8 +97,11 @@ REMOTE_SCRIPT="${RUN_DIR}/run_aliyun_deploy.sh"
 mkdir -p "${RUN_DIR}"
 
 ensure_downloader
+DEPLOY_SCRIPT_URL="${RAW_BASE}/${GITHUB_OWNER}/${GITHUB_REPO}"
+DEPLOY_SCRIPT_URL="${DEPLOY_SCRIPT_URL}/${GITHUB_BRANCH}"
+DEPLOY_SCRIPT_URL="${DEPLOY_SCRIPT_URL}/${DEPLOY_SCRIPT_PATH}"
 echo "下载仓库内最新部署脚本：${DEPLOY_SCRIPT_URL}"
-curl -fsSL --retry 3 --connect-timeout 20 "${DEPLOY_SCRIPT_URL}" -o "${REMOTE_SCRIPT}"
+download_file "${DEPLOY_SCRIPT_URL}" "${REMOTE_SCRIPT}"
 chmod +x "${REMOTE_SCRIPT}"
 
 echo "开始执行部署。日志会直接输出到当前 Workbench 窗口。"
